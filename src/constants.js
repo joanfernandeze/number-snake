@@ -39,3 +39,20 @@ export const INPUT = {
   queueDepth: 2,        // buffered turns: a fast LEFT-then-UP lands both
   swipeThresholdPx: 24, // finger travel before a swipe registers (fires on move, not on lift)
 };
+
+export const FX = {
+  burstMs: 700,         // life of a "Merge! / Combo x2 / Chain x3!" text burst
+  ringMs: 220,          // life of the white merge ring
+  particleMs: 500,      // life of a merge particle
+  particlesPerMerge: 6, // particles per merge in the cascade ...
+  particlesMax: 30,     // ... capped here
+  shakeMs: 220,
+  shakeMag: 8,          // px
+  readyPulseMs: 1200,   // period of the "swipe to start" pulse
+};
+
+export const DEATH = {
+  flashMs: 700,         // the offending cell pulses red for this long, then stays lit
+  flashPeriodMs: 230,   // one on/off pulse
+  overlayDelayMs: 700,  // game-over panel appears after the flash has read
+};
