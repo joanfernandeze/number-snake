@@ -1,5 +1,6 @@
 import { GRID, POWER_COLORS, FALLBACK_COLOR, FX, DEATH } from './constants.js';
 import { ageOf } from './fx.js';
+import { nextDirection } from './snake.js';
 
 // Pure view. draw() reads game + fx state and paints one frame in CSS pixels;
 // main.js has already scaled the context by devicePixelRatio.
@@ -19,6 +20,19 @@ export function layout(view, cols = GRID.cols, rows = GRID.rows) {
   };
 }
 
+export const PAD = 0.08; // padding around a segment or tile, as a fraction of the cell
+
+// Eye centres relative to the head centre (px) for heading `dir`: on the leading
+// edge, spread across it, clear of the number.
+export function eyeOffsets(dir, cell) {
+  const forward = cell * 0.36, spread = cell * 0.18;
+  const px = -dir.y, py = dir.x; // perpendicular to the heading
+  return [
+    { dx: dir.x * forward + px * spread, dy: dir.y * forward + py * spread },
+    { dx: dir.x * forward - px * spread, dy: dir.y * forward - py * spread },
+  ];
+}
+
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -30,7 +44,7 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 function drawCell(ctx, px, py, cell, color, isHead) {
-  const pad = cell * 0.08;
+  const pad = cell * PAD;
   if (isHead) {
     ctx.shadowColor = color;
     ctx.shadowBlur = 18;
@@ -47,6 +61,58 @@ function drawNumber(ctx, px, py, cell, value) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(value), px + cell / 2, py + cell / 2 + 1);
+}
+
+// Fill the gap between two neighbouring segments so the body reads as one snake.
+// Each half takes its own segment's colour. `vertical` comes from the grid cells, so
+// the bridge stays axis-aligned while the head slides in on an eat tick.
+function drawBridge(ctx, a, b, cell, colorA, colorB, vertical) {
+  const pad = cell * PAD, w = cell - pad * 2;
+  const acx = a.px + cell / 2, acy = a.py + cell / 2;
+  const bcx = b.px + cell / 2, bcy = b.py + cell / 2;
+  const mx = (acx + bcx) / 2, my = (acy + bcy) / 2;
+  if (vertical) {
+    const x = a.px + pad;
+    ctx.fillStyle = colorA; ctx.fillRect(x, Math.min(acy, my), w, Math.abs(my - acy));
+    ctx.fillStyle = colorB; ctx.fillRect(x, Math.min(bcy, my), w, Math.abs(my - bcy));
+  } else {
+    const y = a.py + pad;
+    ctx.fillStyle = colorA; ctx.fillRect(Math.min(acx, mx), y, Math.abs(mx - acx), w);
+    ctx.fillStyle = colorB; ctx.fillRect(Math.min(bcx, mx), y, Math.abs(mx - bcx), w);
+  }
+}
+
+function drawHeadOutline(ctx, px, py, cell) {
+  const pad = cell * PAD;
+  ctx.lineWidth = Math.max(2, cell * 0.06);
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  roundRect(ctx, px + pad, py + pad, cell - pad * 2, cell - pad * 2, cell * 0.22);
+  ctx.stroke();
+}
+
+// Two eyes on the leading edge, pupils nudged forward. `dir` is the direction the
+// next tick will take, so a queued turn shows immediately.
+function drawEyes(ctx, cx, cy, cell, dir) {
+  const r = Math.max(2, cell * 0.075), pupil = r * 0.5;
+  for (const e of eyeOffsets(dir, cell)) {
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(cx + e.dx, cy + e.dy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0b1020';
+    ctx.beginPath(); ctx.arc(cx + e.dx + dir.x * r * 0.35, cy + e.dy + dir.y * r * 0.35, pupil, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// A red frame just inside the board edge: the boundary is death, say so before contact.
+function drawWalls(ctx, L) {
+  const lw = Math.max(3, L.cell * 0.07);
+  ctx.save();
+  ctx.lineWidth = lw;
+  ctx.strokeStyle = 'rgba(239,68,68,0.85)';
+  ctx.shadowColor = 'rgba(239,68,68,0.9)';
+  ctx.shadowBlur = lw * 3;
+  roundRect(ctx, L.ox + lw / 2, L.oy + lw / 2, L.cols * L.cell - lw, L.rows * L.cell - lw, L.cell * 0.25);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawBoard(ctx, L) {
@@ -73,14 +139,22 @@ function drawTiles(ctx, L, tiles) {
 function drawSnake(ctx, L, snake, motion) {
   const f = motion.kind === 'none' ? 0 : 1 - motion.progress;
   const dx = -motion.dir.x * f * L.cell, dy = -motion.dir.y * f * L.cell;
-  for (let i = snake.cells.length - 1; i >= 0; i--) { // tail first so the head paints on top
-    const c = snake.cells[i];
+  const pos = snake.cells.map((c, i) => {
     const moves = motion.kind === 'slide' || (motion.kind === 'grow' && i === 0);
-    const px = L.ox + c.x * L.cell + (moves ? dx : 0);
-    const py = L.oy + c.y * L.cell + (moves ? dy : 0);
-    drawCell(ctx, px, py, L.cell, colorFor(snake.values[i]), i === 0);
-    drawNumber(ctx, px, py, L.cell, snake.values[i]);
+    return { px: L.ox + c.x * L.cell + (moves ? dx : 0), py: L.oy + c.y * L.cell + (moves ? dy : 0) };
+  });
+  // Bridges first so the segments paint over their ends.
+  for (let i = 0; i < pos.length - 1; i++) {
+    const vertical = snake.cells[i].x === snake.cells[i + 1].x;
+    drawBridge(ctx, pos[i], pos[i + 1], L.cell, colorFor(snake.values[i]), colorFor(snake.values[i + 1]), vertical);
   }
+  for (let i = pos.length - 1; i >= 0; i--) { // tail first so the head paints on top
+    drawCell(ctx, pos[i].px, pos[i].py, L.cell, colorFor(snake.values[i]), i === 0);
+    drawNumber(ctx, pos[i].px, pos[i].py, L.cell, snake.values[i]);
+  }
+  const h = pos[0];
+  drawHeadOutline(ctx, h.px, h.py, L.cell);
+  drawEyes(ctx, h.px + L.cell / 2, h.py + L.cell / 2, L.cell, nextDirection(snake));
 }
 
 // The cell the head tried to enter: a red pulse on a body cell, or a red bar on
@@ -179,6 +253,7 @@ export function draw(ctx, view, game, fx, now, motion) {
     ctx.translate((Math.random() - 0.5) * fx.shake.mag, (Math.random() - 0.5) * fx.shake.mag);
   }
   drawBoard(ctx, L);
+  drawWalls(ctx, L);
   drawTiles(ctx, L, game.board.tiles);
   drawSnake(ctx, L, game.snake, motion);
   drawDeath(ctx, L, fx, now);

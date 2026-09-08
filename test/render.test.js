@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { layout, colorFor } from '../src/render.js';
+import { layout, colorFor, eyeOffsets } from '../src/render.js';
 import { POWER_COLORS, FALLBACK_COLOR } from '../src/constants.js';
 
 test('layout fits a 7x11 grid into the view and centres it', () => {
@@ -31,4 +31,14 @@ test('colorFor maps powers of two onto the palette and falls back past the end',
   assert.equal(colorFor(4), POWER_COLORS[1]);
   assert.equal(colorFor(1024), POWER_COLORS[9]);
   assert.equal(colorFor(2048), FALLBACK_COLOR);
+});
+
+test('eyeOffsets puts both eyes on the leading edge, spread across it', () => {
+  const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} !== ${b}`);
+  const [a, b] = eyeOffsets({ x: 0, y: -1 }, 100); // heading up
+  near(a.dy, -36); near(b.dy, -36);
+  near(a.dx, 18); near(b.dx, -18);
+  const [c, d] = eyeOffsets({ x: 1, y: 0 }, 100); // heading right
+  near(c.dx, 36); near(d.dx, 36);
+  near(Math.abs(c.dy), 18); near(c.dy, -d.dy);
 });
