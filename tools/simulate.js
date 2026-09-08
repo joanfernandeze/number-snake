@@ -25,14 +25,19 @@ function positiveNumber(name, raw) {
   if (raw === '' || !Number.isFinite(n) || n <= 0) fail(`--${name} needs a positive number, got "${raw}"`);
   return n;
 }
+function positiveInt(name, raw) {
+  const n = positiveNumber(name, raw);
+  if (!Number.isInteger(n)) fail(`--${name} needs a whole number, got "${raw}"`);
+  return n;
+}
 for (const k of Object.keys(args)) if (!['window', 'decay', 'tiles', 'runs'].includes(k)) fail(`unknown option --${k}`);
 if ('window' in args) {
   if (!['max', 'head'].includes(args.window)) fail(`--window must be max or head, got "${args.window}"`);
   SPAWN.window = args.window;
 }
 if ('decay' in args) SPAWN.decay = positiveNumber('decay', args.decay);
-if ('tiles' in args) SPAWN.maxTiles = Math.floor(positiveNumber('tiles', args.tiles));
-const RUNS = 'runs' in args ? Math.floor(positiveNumber('runs', args.runs)) : 300;
+if ('tiles' in args) SPAWN.maxTiles = positiveInt('tiles', args.tiles);
+const RUNS = 'runs' in args ? positiveInt('runs', args.runs) : 300;
 
 const DIRS = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
 
