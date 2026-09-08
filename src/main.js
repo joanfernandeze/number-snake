@@ -5,6 +5,7 @@ import * as Snake from './snake.js';
 import * as Fx from './fx.js';
 import { initInput } from './input.js';
 import { GRID, STORAGE_KEY, DEATH } from './constants.js';
+import { loadRuns, saveRuns, summarize } from './telemetry.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -41,6 +42,11 @@ function fitCanvas() {
 let best = loadBest();
 let game, fx, lastTick, motion, prevNow;
 
+const SESSION = Date.now().toString(36); // one page load = one "player session"
+let runs = loadRuns();
+let run; // { session, t0, firstMergeMs } for the run in progress
+window.numberSnakeStats = () => summarize(runs); // call from DevTools during a playtest
+
 function start() {
   const seed = (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0;
   game = Game.createGame(createRng(seed));
@@ -48,11 +54,12 @@ function start() {
   motion = { kind: 'none', dir: { ...game.snake.direction }, progress: 1 };
   lastTick = performance.now();
   $('overlay').classList.add('hidden');
+  run = { session: SESSION, t0: null, firstMergeMs: null };
 }
 
 function onDirection(dir) {
   if (!game || game.over) return;
-  if (!game.started) { Game.startRun(game); lastTick = performance.now(); }
+  if (!game.started) { Game.startRun(game); lastTick = performance.now(); run.t0 = lastTick; }
   Snake.setDirection(game.snake, dir);
 }
 
@@ -69,6 +76,20 @@ function onGameOver(ev, now) {
   $('ovCombo').textContent = game.bestCombo;
   $('ovBestTile').textContent = best.tile;
   $('ovBestScore').textContent = best.score;
+  const rec = {
+    session: run.session,
+    firstMergeMs: run.firstMergeMs,
+    durationMs: Math.round(now - run.t0),
+    ticks: game.ticks,
+    score: game.score,
+    bestTile: game.bestTile,
+    bestCombo: game.bestCombo,
+    cause: ev.cause.type,
+    endedAt: Date.now(),
+  };
+  runs = saveRuns([...runs, rec]);
+  console.log('[Number Snake] run', rec);
+  console.log('[Number Snake] stats', summarize(runs));
   setTimeout(() => { if (game.over) $('overlay').classList.remove('hidden'); }, DEATH.overlayDelayMs);
 }
 
@@ -84,7 +105,10 @@ function frame(now) {
       onGameOver(ev, now);
     } else {
       motion = { kind: ev.ate ? 'grow' : 'slide', dir: { ...game.snake.direction }, progress: 0 };
-      if (ev.merges > 0) Fx.addMerge(fx, ev.cell, ev.merges, Render.colorFor(game.snake.values[0]), now);
+      if (ev.merges > 0) {
+        Fx.addMerge(fx, ev.cell, ev.merges, Render.colorFor(game.snake.values[0]), now);
+        if (run.firstMergeMs === null) run.firstMergeMs = Math.round(now - run.t0);
+      }
     }
   }
   if (motion.kind !== 'none') motion.progress = Math.min(1, (now - lastTick) / interval);

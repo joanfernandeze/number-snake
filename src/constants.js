@@ -57,3 +57,8 @@ export const DEATH = {
   flashPeriodMs: 230,   // one on/off pulse
   overlayDelayMs: 700,  // game-over panel appears after the flash has read
 };
+
+export const TELEMETRY = {
+  storageKey: 'numberSnake.runs',
+  maxRuns: 50, // newest runs kept in localStorage
+};
