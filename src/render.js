@@ -103,14 +103,18 @@ function drawEyes(ctx, cx, cy, cell, dir) {
 }
 
 // A red frame just inside the board edge: the boundary is death, say so before contact.
+// The canvas is clipped by CSS `border-radius: 16px`, so the frame keeps at least that
+// corner radius and sits a full line width inside; otherwise small phone cells would
+// lose the corners — exactly where two walls meet.
 function drawWalls(ctx, L) {
   const lw = Math.max(3, L.cell * 0.07);
+  const r = Math.max(L.cell * 0.25, 16);
   ctx.save();
   ctx.lineWidth = lw;
   ctx.strokeStyle = 'rgba(239,68,68,0.85)';
   ctx.shadowColor = 'rgba(239,68,68,0.9)';
   ctx.shadowBlur = lw * 3;
-  roundRect(ctx, L.ox + lw / 2, L.oy + lw / 2, L.cols * L.cell - lw, L.rows * L.cell - lw, L.cell * 0.25);
+  roundRect(ctx, L.ox + lw, L.oy + lw, L.cols * L.cell - lw * 2, L.rows * L.cell - lw * 2, r);
   ctx.stroke();
   ctx.restore();
 }
