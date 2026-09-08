@@ -5,7 +5,7 @@ import * as Snake from './snake.js';
 import * as Fx from './fx.js';
 import { initInput } from './input.js';
 import { GRID, STORAGE_KEY, DEATH } from './constants.js';
-import { loadRuns, saveRuns, buildRun, summarize } from './telemetry.js';
+import { loadRuns, saveRuns, buildRun, summarize, formatStats } from './telemetry.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -54,6 +54,8 @@ function start() {
   motion = { kind: 'none', dir: { ...game.snake.direction }, progress: 1 };
   lastTick = performance.now();
   $('overlay').classList.add('hidden');
+  $('stats').classList.add('hidden');
+  $('statsCopied').classList.add('hidden');
   run = { session: SESSION, t0: null, firstMergeMs: null };
 }
 
@@ -78,6 +80,7 @@ function onGameOver(ev, now) {
   $('ovBestScore').textContent = best.score;
   const rec = buildRun(run, game, ev, now);
   runs = saveRuns([...runs, rec]);
+  $('statsText').textContent = formatStats(summarize(runs));
   console.log('[Number Snake] run', rec);
   console.log('[Number Snake] stats', summarize(runs));
   setTimeout(() => { if (game.over) $('overlay').classList.remove('hidden'); }, DEATH.overlayDelayMs);
@@ -115,6 +118,18 @@ function frame(now) {
 
 initInput(canvas, onDirection);
 $('playAgain').addEventListener('click', start);
+$('statsToggle').addEventListener('click', () => $('stats').classList.toggle('hidden'));
+$('statsCopy').addEventListener('click', async () => {
+  const note = $('statsCopied');
+  try {
+    await navigator.clipboard.writeText($('statsText').textContent);
+    note.textContent = 'Copied';
+  } catch {
+    note.textContent = 'Copy blocked — long-press the text to select it';
+  }
+  note.classList.remove('hidden');
+  setTimeout(() => note.classList.add('hidden'), 1800);
+});
 window.addEventListener('resize', fitCanvas);
 window.addEventListener('orientationchange', fitCanvas);
 

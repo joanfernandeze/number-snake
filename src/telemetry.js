@@ -65,3 +65,18 @@ export function summarize(runs) {
     causes,
   };
 }
+
+// Human-readable summary for the game-over panel; short enough to paste into a chat.
+export function formatStats(s) {
+  const sec = (ms) => (ms === null ? '–' : `${(ms / 1000).toFixed(1)} s`);
+  const entries = Object.entries(s.causes);
+  const causes = entries.length ? entries.map(([k, v]) => `${k} ${v}`).join(' · ') : '–';
+  return [
+    'Number Snake stats',
+    `runs: ${s.runs} (${s.runsPerSession} per session, ${s.neverMerged} never merged)`,
+    `first merge: median ${sec(s.medianFirstMergeMs)}`,
+    `run length: median ${sec(s.medianDurationMs)}`,
+    `best tile: ${s.bestTile} (median ${s.medianBestTile === null ? '–' : s.medianBestTile})`,
+    `deaths: ${causes}`,
+  ].join('\n');
+}

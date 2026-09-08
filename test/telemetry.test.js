@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadRuns, saveRuns, median, buildRun, summarize } from '../src/telemetry.js';
+import { loadRuns, saveRuns, median, buildRun, summarize, formatStats } from '../src/telemetry.js';
 
 function fakeStorage() {
   const m = new Map();
@@ -89,4 +89,27 @@ test('buildRun assembles the record from the live run, game and fatal event', ()
 test('saveRuns swallows a storage write failure and still returns the kept runs', () => {
   const s = { getItem: () => null, setItem: () => { throw new Error('quota'); } };
   assert.deepEqual(saveRuns([{ id: 1 }], s, 'k', 3), [{ id: 1 }]);
+});
+
+test('formatStats renders the summary as readable lines', () => {
+  const text = formatStats({
+    runs: 7, runsPerSession: 1.75, neverMerged: 2,
+    medianFirstMergeMs: 6400, medianDurationMs: 41000,
+    bestTile: 128, medianBestTile: 32, causes: { self: 5, wall: 2 },
+  });
+  assert.equal(text.split('\n')[0], 'Number Snake stats');
+  assert.ok(text.includes('runs: 7 (1.75 per session, 2 never merged)'), text);
+  assert.ok(text.includes('first merge: median 6.4 s'), text);
+  assert.ok(text.includes('run length: median 41.0 s'), text);
+  assert.ok(text.includes('best tile: 128 (median 32)'), text);
+  assert.ok(text.includes('deaths: self 5 · wall 2'), text);
+});
+
+test('formatStats shows dashes when there is nothing to report', () => {
+  const text = formatStats(summarize([]));
+  assert.ok(text.includes('runs: 0 (0 per session, 0 never merged)'), text);
+  assert.ok(text.includes('first merge: median –'), text);
+  assert.ok(text.includes('run length: median –'), text);
+  assert.ok(text.includes('best tile: 0 (median –)'), text);
+  assert.ok(text.includes('deaths: –'), text);
 });
