@@ -34,3 +34,8 @@ export const POWER_COLORS = [
 export const FALLBACK_COLOR = '#e5e7eb';
 
 export const STORAGE_KEY = 'numberSnake.best';
+
+export const INPUT = {
+  queueDepth: 2,        // buffered turns: a fast LEFT-then-UP lands both
+  swipeThresholdPx: 24, // finger travel before a swipe registers (fires on move, not on lift)
+};

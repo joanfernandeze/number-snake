@@ -23,7 +23,7 @@ test('eating a matching tile scores and raises bestTile', () => {
   const g = createGame(createRng(1));
   g.snake.cells = [{ x: 3, y: 5 }];
   g.snake.values = [2];
-  g.snake.direction = { ...UP }; g.snake.pending = { ...UP };
+  g.snake.direction = { ...UP }; g.snake.queue = [];
   g.board.tiles = [{ x: 3, y: 4, value: 2 }];
   const ev = step(g); // eat 2 onto 2 -> merge to 4
   assert.equal(ev.ate, true);
@@ -37,7 +37,7 @@ test('moving into a wall ends the run', () => {
   const g = createGame(createRng(1));
   g.snake.cells = [{ x: 3, y: 0 }];
   g.snake.values = [2];
-  g.snake.direction = { ...UP }; g.snake.pending = { ...UP };
+  g.snake.direction = { ...UP }; g.snake.queue = [];
   g.board.tiles = [];
   const ev = step(g);
   assert.equal(ev.over, true);
@@ -51,7 +51,7 @@ test('moving into your own body ends the run', () => {
     { x: 3, y: 5 }, { x: 3, y: 6 }, { x: 4, y: 6 }, { x: 4, y: 5 }, { x: 5, y: 5 },
   ];
   g.snake.values = [2, 2, 2, 2, 2];
-  g.snake.direction = { ...DOWN }; g.snake.pending = { ...DOWN };
+  g.snake.direction = { ...DOWN }; g.snake.queue = [];
   g.board.tiles = [];
   const ev = step(g); // head (3,5) -> (3,6) which is its own body
   assert.equal(ev.over, true);

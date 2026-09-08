@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createSnake, head, length, maxValue,
-  setDirection, nextHeadCell, isWall, hitsSelf, move, eat,
+  setDirection, nextDirection, nextHeadCell, isWall, hitsSelf, move, eat,
 } from '../src/snake.js';
 
 const UP = { x: 0, y: -1 }, DOWN = { x: 0, y: 1 }, LEFT = { x: -1, y: 0 }, RIGHT = { x: 1, y: 0 };
@@ -20,9 +20,9 @@ test('createSnake builds head + trailing body opposite the direction', () => {
 test('setDirection ignores a 180-degree reverse when length > 1', () => {
   const s = createSnake(2, 2, { x: 3, y: 5 }, UP);
   setDirection(s, DOWN);
-  assert.deepEqual(s.pending, UP); // reverse rejected
+  assert.deepEqual(nextDirection(s), UP); // reverse rejected
   setDirection(s, LEFT);
-  assert.deepEqual(s.pending, LEFT); // turn accepted
+  assert.deepEqual(nextDirection(s), LEFT); // turn accepted
 });
 
 test('nextHeadCell uses the pending direction', () => {
@@ -106,4 +106,58 @@ test('the snake stays a contiguous chain after a merge (tail pops, no gaps)', ()
   assert.equal(length(s), 4);
   assert.deepEqual(s.cells[0], { x: 3, y: 4 });
   assert.deepEqual(s.cells[3], { x: 3, y: 7 });
+});
+
+test('setDirection ignores a repeat of the current heading', () => {
+  const s = createSnake(2, 2, { x: 3, y: 5 }, UP);
+  setDirection(s, UP);
+  assert.deepEqual(s.queue, []);
+});
+
+test('setDirection buffers two turns so a fast LEFT-then-DOWN lands both', () => {
+  const s = createSnake(3, 2, { x: 3, y: 5 }, UP);
+  setDirection(s, LEFT);
+  setDirection(s, DOWN); // reverses the UP heading, but is a legal turn after LEFT
+  assert.deepEqual(s.queue, [LEFT, DOWN]);
+  assert.deepEqual(nextDirection(s), LEFT);
+  move(s);
+  assert.deepEqual(s.direction, LEFT);
+  assert.deepEqual(head(s), { x: 2, y: 5 });
+  move(s);
+  assert.deepEqual(s.direction, DOWN);
+  assert.deepEqual(head(s), { x: 2, y: 6 });
+  assert.deepEqual(s.queue, []);
+});
+
+test('setDirection drops a third turn while two are buffered', () => {
+  const s = createSnake(3, 2, { x: 3, y: 5 }, UP);
+  setDirection(s, LEFT);
+  setDirection(s, DOWN);
+  setDirection(s, RIGHT);
+  assert.deepEqual(s.queue, [LEFT, DOWN]);
+});
+
+test('setDirection ignores a reverse of the last queued turn', () => {
+  const s = createSnake(3, 2, { x: 3, y: 5 }, RIGHT);
+  setDirection(s, UP);
+  setDirection(s, DOWN); // would reverse the queued UP
+  assert.deepEqual(s.queue, [UP]);
+});
+
+test('move keeps the heading when nothing is queued', () => {
+  const s = createSnake(2, 2, { x: 3, y: 5 }, UP);
+  move(s);
+  assert.deepEqual(s.direction, UP);
+  assert.deepEqual(head(s), { x: 3, y: 4 });
+});
+
+test('eat consumes the queued turn like move does', () => {
+  const s = createSnake(2, 2, { x: 3, y: 5 }, UP);
+  setDirection(s, RIGHT);
+  const cell = nextHeadCell(s);
+  assert.deepEqual(cell, { x: 4, y: 5 });
+  eat(s, cell, 8);
+  assert.deepEqual(s.direction, RIGHT);
+  assert.deepEqual(s.queue, []);
+  assert.deepEqual(head(s), { x: 4, y: 5 });
 });
