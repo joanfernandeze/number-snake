@@ -1,10 +1,22 @@
 // Headless balance simulation. Plays many runs with simple AI policies and
 // reports stats, so we can sanity-check feel/tuning before a human playtest.
-//   Run: node tools/simulate.js
+//   node tools/simulate.js
+//   node tools/simulate.js --window=head --decay=0.6 --tiles=4 --runs=500
+// Overrides mutate the shared SPAWN object before any game is created.
 import { createRng } from '../src/rng.js';
 import { createGame, step, startRun } from '../src/game.js';
 import * as Snake from '../src/snake.js';
 import * as Board from '../src/board.js';
+import { SPAWN } from '../src/constants.js';
+
+const args = Object.fromEntries(process.argv.slice(2).map(a => {
+  const m = a.match(/^--([^=]+)=(.*)$/);
+  return m ? [m[1], m[2]] : [a.replace(/^--/, ''), 'true'];
+}));
+if (args.window) SPAWN.window = args.window;
+if (args.decay) SPAWN.decay = Number(args.decay);
+if (args.tiles) SPAWN.maxTiles = Number(args.tiles);
+const RUNS = args.runs ? Number(args.runs) : 300;
 
 const DIRS = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
 
@@ -58,7 +70,11 @@ function runOne(seed, policy, maxTicks = 5000) {
     step(g);
     ticks += 1;
   }
-  return { maxTile: g.bestTile, score: g.score, ticks, cause: g.lastCause ? g.lastCause.type : 'cap' };
+  return {
+    maxTile: g.bestTile, score: g.score, ticks,
+    len: g.snake.cells.length,
+    cause: g.lastCause ? g.lastCause.type : 'cap',
+  };
 }
 
 function summarize(label, policy, runs) {
@@ -72,10 +88,11 @@ function summarize(label, policy, runs) {
   console.log(`\n=== ${label} (${runs} runs) ===`);
   console.log(`avg score      ${avg('score').toFixed(0)}`);
   console.log(`avg max tile   ${avg('maxTile').toFixed(0)}   (median ${maxTiles[Math.floor(runs / 2)]}, best ${maxTiles[maxTiles.length - 1]})`);
-  console.log(`avg run ticks  ${avg('ticks').toFixed(0)}`);
-  console.log(`reached >=32   ${pct(r => r.maxTile >= 32)}%   >=64 ${pct(r => r.maxTile >= 64)}%   >=128 ${pct(r => r.maxTile >= 128)}%`);
+  console.log(`avg run ticks  ${avg('ticks').toFixed(0)}   avg length at death ${avg('len').toFixed(1)}`);
+  console.log(`reached >=32   ${pct(r => r.maxTile >= 32)}%   >=64 ${pct(r => r.maxTile >= 64)}%   >=128 ${pct(r => r.maxTile >= 128)}%   >=256 ${pct(r => r.maxTile >= 256)}%`);
   console.log(`death cause    ${JSON.stringify(causes)}`);
 }
 
-summarize('Random-safe policy (baseline / button-masher)', 'random', 300);
-summarize('Greedy policy (plays for matches)', 'greedy', 300);
+console.log(`config: window=${SPAWN.window} decay=${SPAWN.decay} tiles=${SPAWN.maxTiles} runs=${RUNS}`);
+summarize('Random-safe policy (baseline / button-masher)', 'random', RUNS);
+summarize('Greedy policy (plays for matches)', 'greedy', RUNS);

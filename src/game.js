@@ -1,4 +1,4 @@
-import { GRID, TIMING, START } from './constants.js';
+import { GRID, TIMING, START, SPAWN } from './constants.js';
 import * as Snake from './snake.js';
 import * as Board from './board.js';
 
@@ -6,11 +6,17 @@ export function tickInterval(score) {
   return Math.max(TIMING.tickFloorMs, TIMING.tickStartMs - score * TIMING.tickPerPoint);
 }
 
+// Upper bound of the tile-value window (spec §5). 'max' keeps every value the
+// player has ever built reachable; 'head' tracks what the head can use right now.
+function spawnRef(snake) {
+  return SPAWN.window === 'head' ? snake.values[0] : Snake.maxValue(snake);
+}
+
 export function createGame(rng) {
   const board = Board.createBoard();
   const start = { x: Math.floor(GRID.cols / 2), y: Math.floor(GRID.rows / 2) };
   const snake = Snake.createSnake(START.snakeLength, START.snakeValue, start, START.direction);
-  Board.refill(board, rng, Snake.maxValue(snake), snake.cells);
+  Board.refill(board, rng, spawnRef(snake), snake.cells);
   return {
     rng, board, snake,
     started: false,   // the run does not move until the player's first input
@@ -59,7 +65,7 @@ export function step(game) {
     if (r.merges > game.bestCombo) game.bestCombo = r.merges;
     const mv = Snake.maxValue(s);
     if (mv > game.bestTile) game.bestTile = mv;
-    Board.refill(b, game.rng, mv, s.cells);
+    Board.refill(b, game.rng, spawnRef(s), s.cells);
     return { over: false, ate: true, merges: r.merges, gained: r.gained, cell: next };
   }
 

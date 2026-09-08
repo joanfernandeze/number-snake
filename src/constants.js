@@ -10,6 +10,8 @@ export const SPAWN = {
   maxTiles: 3,        // tiles kept on the board at once
   decay: 0.45,        // geometric weight per value step (lower value = far more common)
   baseValue: 2,       // smallest tile value
+  window: 'max',      // 'max': values up to the snake's largest segment (spec §5 default)
+                      // 'head': values up to the head's value (easier to keep doubling; playtest knob)
 };
 
 export const START = {
