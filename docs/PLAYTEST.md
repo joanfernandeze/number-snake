@@ -38,7 +38,8 @@ Did the red flash on the cell (or wall edge) they hit make the death feel like t
 | Climb stalls: never sees the value they need  | `SPAWN.window = 'head'`, or raise `SPAWN.decay` (0.45 → 0.6)  |
 | Never in danger                               | lower `TIMING.tickStartMs` / `tickFloorMs`, or shrink `GRID`  |
 | Chaos at speed                                | raise `TIMING.tickFloorMs`, or lower `TIMING.tickPerPoint`    |
-| Turns feel late                               | lower `INPUT.swipeThresholdPx` (24 → 16)                      |
+| Turns feel late                               | lower `INPUT.swipeThresholdPx` (16 → 12)                      |
+| Start feels slow / too fast                   | `TIMING.tickStartMs` (now 170; was 200 before the 2026-09-08 playtest) |
 | Diagonal swipes flip direction                | raise `INPUT.turnBias` (1.5 → 2)                              |
 | Cascades go unnoticed                         | raise `FX.burstMs` / `FX.particlesPerMerge`                   |
 | Death reads as abrupt                         | raise `DEATH.flashMs` / `DEATH.overlayDelayMs`                |
