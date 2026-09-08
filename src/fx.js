@@ -58,8 +58,9 @@ export function ageOf(item, now) {
 export function update(fx, now, dtMs) {
   const dt = dtMs / 1000;
   for (const p of fx.particles) { p.x += p.vx * dt; p.y += p.vy * dt; }
-  fx.rings = fx.rings.filter(r => ageOf(r, now) !== null);
-  fx.bursts = fx.bursts.filter(b => ageOf(b, now) !== null);
-  fx.particles = fx.particles.filter(p => ageOf(p, now) !== null);
+  // Skip the filter (and its allocation) on the many frames where nothing is live.
+  if (fx.rings.length) fx.rings = fx.rings.filter(r => ageOf(r, now) !== null);
+  if (fx.bursts.length) fx.bursts = fx.bursts.filter(b => ageOf(b, now) !== null);
+  if (fx.particles.length) fx.particles = fx.particles.filter(p => ageOf(p, now) !== null);
   if (fx.shake && now >= fx.shake.until) fx.shake = null;
 }

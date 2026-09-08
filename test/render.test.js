@@ -15,8 +15,15 @@ test('layout fits a 7x11 grid into the view and centres it', () => {
 test('layout is limited by the tighter axis and centres the slack', () => {
   const L = layout({ width: 420, height: 400 }, 7, 11); // height-bound: 400/11 = 36.36 -> 36
   assert.equal(L.cell, 36);
-  assert.equal(L.ox, Math.floor((420 - 36 * 7) / 2));
-  assert.equal(L.oy, Math.floor((400 - 36 * 11) / 2));
+  assert.equal(L.ox, 84);
+  assert.equal(L.oy, 2);
+});
+
+test('layout is width-bound in a narrow view', () => {
+  const L = layout({ width: 210, height: 660 }, 7, 11); // 210/7 = 30 < 660/11 = 60
+  assert.equal(L.cell, 30);
+  assert.equal(L.ox, 0);
+  assert.equal(L.oy, 165);
 });
 
 test('colorFor maps powers of two onto the palette and falls back past the end', () => {

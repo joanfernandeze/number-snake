@@ -46,7 +46,7 @@ export const FX = {
   ringMs: 220,          // life of the white merge ring
   particleMs: 500,      // life of a merge particle
   particlesPerMerge: 6, // particles per merge in the cascade ...
-  particlesMax: 30,     // ... capped here
+  particlesMax: 30,     // ... capped here, per merge event
   shakeMs: 220,
   shakeMag: 8,          // px
   readyPulseMs: 1200,   // period of the "swipe to start" pulse
