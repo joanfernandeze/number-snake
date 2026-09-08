@@ -26,9 +26,7 @@ html, body {
 .stat .label { font-size: 11px; letter-spacing: 1px; color: #93a4c3; }
 .stat span:last-child { font-size: 26px; font-weight: 800; }
 #game {
-  width: 100%;
-  max-width: 420px;
-  height: auto;
+  display: block;               /* size (width/height) is set inline by main.js */
   background: #111935;
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0,0,0,.5);
