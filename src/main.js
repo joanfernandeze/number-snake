@@ -117,7 +117,8 @@ function frame(now) {
 }
 
 // Clipboard API needs https or localhost. On a LAN http:// URL fall back to selecting
-// the text and the legacy copy command; if even that fails the text stays selected.
+// the text and the legacy copy command; the selection is cleared on success and left
+// in place on failure so the player can long-press it.
 async function copyText(el) {
   try { await navigator.clipboard.writeText(el.textContent); return true; } catch { /* fall through */ }
   const range = document.createRange();
@@ -125,7 +126,10 @@ async function copyText(el) {
   const sel = window.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
-  try { return document.execCommand('copy'); } catch { return false; }
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { ok = false; }
+  if (ok) sel.removeAllRanges();
+  return ok;
 }
 
 initInput(canvas, onDirection);
