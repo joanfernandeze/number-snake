@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Number Snake</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="hud">
+      <div class="stat"><span class="label">SCORE</span><span id="score">0</span></div>
+      <div class="stat"><span class="label">BEST TILE</span><span id="bestTile">0</span></div>
+    </header>
+    <canvas id="game" width="420" height="660"></canvas>
+    <div id="overlay" class="hidden">
+      <div class="panel">
+        <h1>Game Over</h1>
+        <p>Tile <strong id="ovTile">0</strong> · Score <strong id="ovScore">0</strong> · Combo <strong id="ovCombo">0</strong></p>
+        <p class="best">Best tile <strong id="ovBestTile">0</strong> · Best score <strong id="ovBestScore">0</strong></p>
+        <button id="playAgain">Play Again</button>
+      </div>
+    </div>
+    <p id="hint">Swipe or use arrow keys. Eat matching numbers to merge up. Don't hit yourself.</p>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
