@@ -5,7 +5,7 @@ import * as Snake from './snake.js';
 import * as Fx from './fx.js';
 import { initInput } from './input.js';
 import { GRID, STORAGE_KEY, DEATH } from './constants.js';
-import { loadRuns, saveRuns, summarize } from './telemetry.js';
+import { loadRuns, saveRuns, buildRun, summarize } from './telemetry.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -76,17 +76,7 @@ function onGameOver(ev, now) {
   $('ovCombo').textContent = game.bestCombo;
   $('ovBestTile').textContent = best.tile;
   $('ovBestScore').textContent = best.score;
-  const rec = {
-    session: run.session,
-    firstMergeMs: run.firstMergeMs,
-    durationMs: Math.round(now - run.t0),
-    ticks: game.ticks,
-    score: game.score,
-    bestTile: game.bestTile,
-    bestCombo: game.bestCombo,
-    cause: ev.cause.type,
-    endedAt: Date.now(),
-  };
+  const rec = buildRun(run, game, ev, now);
   runs = saveRuns([...runs, rec]);
   console.log('[Number Snake] run', rec);
   console.log('[Number Snake] stats', summarize(runs));

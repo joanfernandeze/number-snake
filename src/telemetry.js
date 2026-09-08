@@ -4,7 +4,7 @@ import { TELEMETRY } from './constants.js';
 // is testable in Node (defaults to window.localStorage in the browser).
 //
 // A run record: { session, firstMergeMs|null, durationMs, ticks, score, bestTile,
-//                 bestCombo, cause: 'wall'|'self', endedAt }
+//                 bestCombo, cause: 'wall'|'self', endedAt }, as produced by `buildRun`.
 // `session` is one page load, so runs-per-session approximates "runs per player".
 
 export function loadRuns(storage = globalThis.localStorage, key = TELEMETRY.storageKey) {
@@ -20,24 +20,48 @@ export function saveRuns(runs, storage = globalThis.localStorage, key = TELEMETR
   return kept;
 }
 
+// Median of a list of numbers; null for an empty list.
 export function median(nums) {
+  if (!nums.length) return null;
   const s = [...nums].sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
 
+// Build the record for a finished run from the live objects main.js holds.
+//   run: { session, t0, firstMergeMs }   game: the finished game   ev: the fatal step event
+export function buildRun(run, game, ev, now, endedAt = Date.now()) {
+  return {
+    session: run.session,
+    firstMergeMs: run.firstMergeMs,
+    durationMs: Math.round(now - run.t0),
+    ticks: game.ticks,
+    score: game.score,
+    bestTile: game.bestTile,
+    bestCombo: game.bestCombo,
+    cause: ev.cause.type,
+    endedAt,
+  };
+}
+
+// Finite numbers stored under `key`; records written by older builds may lack fields.
+function nums(runs, key) {
+  return runs.map(r => r[key]).filter(v => typeof v === 'number' && Number.isFinite(v));
+}
+
 export function summarize(runs) {
   const sessions = new Set(runs.map(r => r.session)).size;
-  const firstMerges = runs.map(r => r.firstMergeMs).filter(v => typeof v === 'number');
   const causes = {};
-  for (const r of runs) causes[r.cause] = (causes[r.cause] || 0) + 1;
+  for (const r of runs) if (typeof r.cause === 'string') causes[r.cause] = (causes[r.cause] || 0) + 1;
+  const tiles = nums(runs, 'bestTile');
   return {
     runs: runs.length,
     runsPerSession: sessions ? +(runs.length / sessions).toFixed(2) : 0,
-    medianFirstMergeMs: firstMerges.length ? median(firstMerges) : null,
-    medianDurationMs: runs.length ? median(runs.map(r => r.durationMs)) : null,
-    bestTile: runs.reduce((m, r) => Math.max(m, r.bestTile), 0),
-    medianBestTile: runs.length ? median(runs.map(r => r.bestTile)) : null,
+    neverMerged: runs.filter(r => r.firstMergeMs == null).length, // null or missing
+    medianFirstMergeMs: median(nums(runs, 'firstMergeMs')),
+    medianDurationMs: median(nums(runs, 'durationMs')),
+    bestTile: tiles.reduce((m, v) => Math.max(m, v), 0),
+    medianBestTile: median(tiles),
     causes,
   };
 }
