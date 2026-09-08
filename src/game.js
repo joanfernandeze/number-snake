@@ -13,6 +13,8 @@ export function createGame(rng) {
   Board.refill(board, rng, Snake.maxValue(snake), snake.cells);
   return {
     rng, board, snake,
+    started: false,   // the run does not move until the player's first input
+    ticks: 0,         // ticks stepped since the run started
     score: 0,
     bestTile: Snake.maxValue(snake),
     bestCombo: 0,
@@ -21,10 +23,17 @@ export function createGame(rng) {
   };
 }
 
+// Called on the player's first direction input; until then step() waits.
+export function startRun(game) {
+  game.started = true;
+}
+
 // Advance the game by one tick. Returns an event object for render/FX:
 //   { over, ate, merges, gained, cell, cause }
 export function step(game) {
   if (game.over) return { over: true };
+  if (!game.started) return { over: false, waiting: true };
+  game.ticks += 1;
   const s = game.snake, b = game.board;
   const next = Snake.nextHeadCell(s);
 

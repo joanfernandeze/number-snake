@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
-import { createGame, step, tickInterval } from '../src/game.js';
+import { createGame, step, startRun, tickInterval } from '../src/game.js';
 
 const UP = { x: 0, y: -1 }, DOWN = { x: 0, y: 1 };
 
@@ -21,6 +21,7 @@ test('createGame seeds a snake and fills the board', () => {
 
 test('eating a matching tile scores and raises bestTile', () => {
   const g = createGame(createRng(1));
+  startRun(g);
   g.snake.cells = [{ x: 3, y: 5 }];
   g.snake.values = [2];
   g.snake.direction = { ...UP }; g.snake.queue = [];
@@ -35,6 +36,7 @@ test('eating a matching tile scores and raises bestTile', () => {
 
 test('moving into a wall ends the run', () => {
   const g = createGame(createRng(1));
+  startRun(g);
   g.snake.cells = [{ x: 3, y: 0 }];
   g.snake.values = [2];
   g.snake.direction = { ...UP }; g.snake.queue = [];
@@ -47,6 +49,7 @@ test('moving into a wall ends the run', () => {
 
 test('moving into your own body ends the run', () => {
   const g = createGame(createRng(1));
+  startRun(g);
   g.snake.cells = [
     { x: 3, y: 5 }, { x: 3, y: 6 }, { x: 4, y: 6 }, { x: 4, y: 5 }, { x: 5, y: 5 },
   ];
@@ -63,4 +66,19 @@ test('step is a no-op once the game is over', () => {
   g.over = true;
   const ev = step(g);
   assert.equal(ev.over, true);
+});
+
+test('step waits until the run is started, then moves', () => {
+  const g = createGame(createRng(1));
+  const before = { ...g.snake.cells[0] };
+  const ev = step(g);
+  assert.equal(ev.waiting, true);
+  assert.equal(g.started, false);
+  assert.deepEqual(g.snake.cells[0], before);
+  assert.equal(g.ticks, 0);
+  startRun(g);
+  assert.equal(g.started, true);
+  step(g);
+  assert.notDeepEqual(g.snake.cells[0], before);
+  assert.equal(g.ticks, 1);
 });

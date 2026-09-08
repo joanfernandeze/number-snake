@@ -45,7 +45,7 @@ function frame(now) {
   const interval = Game.tickInterval(game.score);
   let progress = Math.min(1, (now - lastTick) / interval);
 
-  if (!game.over && now - lastTick >= interval) {
+  if (game.started && !game.over && now - lastTick >= interval) {
     const ev = Game.step(game);
     lastTick = now;
     progress = 0;
@@ -60,7 +60,11 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-initInput(canvas, (dir) => { if (game && !game.over) Snake.setDirection(game.snake, dir); });
+initInput(canvas, (dir) => {
+  if (!game || game.over) return;
+  if (!game.started) { Game.startRun(game); lastTick = performance.now(); }
+  Snake.setDirection(game.snake, dir);
+});
 $('playAgain').addEventListener('click', start);
 
 start();

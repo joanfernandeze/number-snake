@@ -2,7 +2,7 @@
 // reports stats, so we can sanity-check feel/tuning before a human playtest.
 //   Run: node tools/simulate.js
 import { createRng } from '../src/rng.js';
-import { createGame, step } from '../src/game.js';
+import { createGame, step, startRun } from '../src/game.js';
 import * as Snake from '../src/snake.js';
 import * as Board from '../src/board.js';
 
@@ -49,6 +49,7 @@ function randomDir(g, rng) {
 
 function runOne(seed, policy, maxTicks = 5000) {
   const g = createGame(createRng(seed));
+  startRun(g);
   const prng = createRng(seed ^ 0x9e3779b9);
   let ticks = 0;
   while (!g.over && ticks < maxTicks) {
