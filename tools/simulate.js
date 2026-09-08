@@ -11,12 +11,28 @@ import { SPAWN } from '../src/constants.js';
 
 const args = Object.fromEntries(process.argv.slice(2).map(a => {
   const m = a.match(/^--([^=]+)=(.*)$/);
-  return m ? [m[1], m[2]] : [a.replace(/^--/, ''), 'true'];
+  return m ? [m[1], m[2]] : [a.replace(/^--/, ''), ''];
 }));
-if (args.window) SPAWN.window = args.window;
-if (args.decay) SPAWN.decay = Number(args.decay);
-if (args.tiles) SPAWN.maxTiles = Number(args.tiles);
-const RUNS = args.runs ? Number(args.runs) : 300;
+
+// A tuning tool must refuse bad input loudly: a NaN knob still prints a
+// plausible-looking report, which is worse than no report.
+function fail(msg) {
+  console.error(`simulate: ${msg}\nusage: node tools/simulate.js [--window=max|head] [--decay=0.6] [--tiles=4] [--runs=500]`);
+  process.exit(1);
+}
+function positiveNumber(name, raw) {
+  const n = Number(raw);
+  if (raw === '' || !Number.isFinite(n) || n <= 0) fail(`--${name} needs a positive number, got "${raw}"`);
+  return n;
+}
+for (const k of Object.keys(args)) if (!['window', 'decay', 'tiles', 'runs'].includes(k)) fail(`unknown option --${k}`);
+if ('window' in args) {
+  if (!['max', 'head'].includes(args.window)) fail(`--window must be max or head, got "${args.window}"`);
+  SPAWN.window = args.window;
+}
+if ('decay' in args) SPAWN.decay = positiveNumber('decay', args.decay);
+if ('tiles' in args) SPAWN.maxTiles = Math.floor(positiveNumber('tiles', args.tiles));
+const RUNS = 'runs' in args ? Math.floor(positiveNumber('runs', args.runs)) : 300;
 
 const DIRS = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
 
