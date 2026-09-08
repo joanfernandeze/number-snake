@@ -113,3 +113,9 @@ test('formatStats shows dashes when there is nothing to report', () => {
   assert.ok(text.includes('best tile: 0 (median –)'), text);
   assert.ok(text.includes('deaths: –'), text);
 });
+
+test('formatStats lists a single death cause without a separator and always six lines', () => {
+  const text = formatStats({ ...summarize([]), causes: { wall: 1 } });
+  assert.ok(text.includes('deaths: wall 1'), text);
+  assert.equal(text.split('\n').length, 6);
+});

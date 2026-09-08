@@ -4,7 +4,7 @@ import * as Render from './render.js';
 import * as Snake from './snake.js';
 import * as Fx from './fx.js';
 import { initInput } from './input.js';
-import { GRID, STORAGE_KEY, DEATH } from './constants.js';
+import { GRID, STORAGE_KEY, DEATH, UI } from './constants.js';
 import { loadRuns, saveRuns, buildRun, summarize, formatStats } from './telemetry.js';
 
 const canvas = document.getElementById('game');
@@ -116,19 +116,26 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+// Clipboard API needs https or localhost. On a LAN http:// URL fall back to selecting
+// the text and the legacy copy command; if even that fails the text stays selected.
+async function copyText(el) {
+  try { await navigator.clipboard.writeText(el.textContent); return true; } catch { /* fall through */ }
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  try { return document.execCommand('copy'); } catch { return false; }
+}
+
 initInput(canvas, onDirection);
 $('playAgain').addEventListener('click', start);
 $('statsToggle').addEventListener('click', () => $('stats').classList.toggle('hidden'));
 $('statsCopy').addEventListener('click', async () => {
   const note = $('statsCopied');
-  try {
-    await navigator.clipboard.writeText($('statsText').textContent);
-    note.textContent = 'Copied';
-  } catch {
-    note.textContent = 'Copy blocked — long-press the text to select it';
-  }
+  note.textContent = (await copyText($('statsText'))) ? 'Copied' : 'Text selected — long-press to copy';
   note.classList.remove('hidden');
-  setTimeout(() => note.classList.add('hidden'), 1800);
+  setTimeout(() => note.classList.add('hidden'), UI.copiedNoteMs);
 });
 window.addEventListener('resize', fitCanvas);
 window.addEventListener('orientationchange', fitCanvas);

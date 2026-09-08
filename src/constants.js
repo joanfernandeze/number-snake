@@ -63,3 +63,7 @@ export const TELEMETRY = {
   storageKey: 'numberSnake.runs',
   maxRuns: 50, // newest runs kept in localStorage
 };
+
+export const UI = {
+  copiedNoteMs: 1800, // how long "Copied" stays visible under the stats
+};
