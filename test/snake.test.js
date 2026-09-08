@@ -25,7 +25,13 @@ test('setDirection ignores a 180-degree reverse when length > 1', () => {
   assert.deepEqual(nextDirection(s), LEFT); // turn accepted
 });
 
-test('nextHeadCell uses the pending direction', () => {
+test('setDirection allows a reverse when the snake is a single segment', () => {
+  const s = createSnake(1, 2, { x: 3, y: 5 }, UP);
+  setDirection(s, DOWN);
+  assert.deepEqual(nextDirection(s), DOWN); // nothing behind the head to crash into
+});
+
+test('nextHeadCell uses the queued direction', () => {
   const s = createSnake(2, 2, { x: 3, y: 5 }, UP);
   setDirection(s, RIGHT);
   assert.deepEqual(nextHeadCell(s), { x: 4, y: 5 });
