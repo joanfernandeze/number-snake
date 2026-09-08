@@ -1,7 +1,7 @@
 export const GRID = { cols: 7, rows: 11 };
 
 export const TIMING = {
-  tickStartMs: 200,   // tick interval at score 0 (gentle)
+  tickStartMs: 170,   // tick interval at score 0 (gentle)
   tickFloorMs: 80,    // fastest tick interval
   tickPerPoint: 0.6,  // ms shaved off the interval per point of score
 };
@@ -38,7 +38,7 @@ export const STORAGE_KEY = 'numberSnake.best';
 
 export const INPUT = {
   queueDepth: 2,        // buffered turns: a fast LEFT-then-UP lands both
-  swipeThresholdPx: 24, // finger travel before a swipe registers (fires on move, not on lift)
+  swipeThresholdPx: 16, // finger travel before a swipe registers (fires on move, not on lift)
   turnBias: 1.5,        // mid-drag axis change needs the new axis to dominate by this factor
 };
 

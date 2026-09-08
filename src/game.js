@@ -6,6 +6,15 @@ export function tickInterval(score) {
   return Math.max(TIMING.tickFloorMs, TIMING.tickStartMs - score * TIMING.tickPerPoint);
 }
 
+// Clock for the next tick after stepping at `now`. Advancing by one interval (not to
+// `now`) lets the leftover time flow into the next slide, so the snake never stands
+// still for a frame at each cell. After a long gap (hidden tab) resync to `now`
+// instead of fast-forwarding through the missed ticks.
+export function nextTickTime(lastTick, interval, now) {
+  const next = lastTick + interval;
+  return now - next > interval ? now : next;
+}
+
 // Upper bound of the tile-value window (spec §5). 'max' keeps every value the
 // player has ever built reachable; 'head' tracks what the head can use right now.
 function spawnRef(snake) {

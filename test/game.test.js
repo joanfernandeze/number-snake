@@ -1,15 +1,24 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
-import { createGame, step, startRun, tickInterval } from '../src/game.js';
-import { SPAWN } from '../src/constants.js';
+import { createGame, step, startRun, tickInterval, nextTickTime } from '../src/game.js';
+import { SPAWN, TIMING } from '../src/constants.js';
 
 const UP = { x: 0, y: -1 }, DOWN = { x: 0, y: 1 };
 
-test('tickInterval starts gentle and clamps at the floor', () => {
-  assert.equal(tickInterval(0), 200);
-  assert.equal(tickInterval(100000), 80); // clamped
+test('tickInterval starts at the configured gentle tick and clamps at the floor', () => {
+  assert.equal(tickInterval(0), TIMING.tickStartMs);
+  assert.equal(tickInterval(100000), TIMING.tickFloorMs); // clamped
   assert.ok(tickInterval(100) < tickInterval(0)); // speeds up with score
+});
+
+test('nextTickTime advances by one interval so leftover time carries into the next slide', () => {
+  assert.equal(nextTickTime(1000, 200, 1216), 1200); // 16ms late: no one-frame pause
+  assert.equal(nextTickTime(1000, 200, 1399), 1200); // still within one interval of catch-up
+});
+
+test('nextTickTime resyncs to now after a long gap instead of fast-forwarding', () => {
+  assert.equal(nextTickTime(1000, 200, 1650), 1650); // e.g. the tab was hidden
 });
 
 test('createGame seeds a snake and fills the board', () => {

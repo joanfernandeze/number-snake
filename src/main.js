@@ -90,7 +90,7 @@ function frame(now) {
 
   if (game.started && !game.over && now - lastTick >= interval) {
     const ev = Game.step(game);
-    lastTick = now;
+    lastTick = Game.nextTickTime(lastTick, interval, now);
     if (ev.over) {
       onGameOver(ev, now);
     } else {
