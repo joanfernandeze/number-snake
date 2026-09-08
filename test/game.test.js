@@ -15,6 +15,7 @@ test('tickInterval starts at the configured gentle tick and clamps at the floor'
 test('nextTickTime advances by one interval so leftover time carries into the next slide', () => {
   assert.equal(nextTickTime(1000, 200, 1216), 1200); // 16ms late: no one-frame pause
   assert.equal(nextTickTime(1000, 200, 1399), 1200); // still within one interval of catch-up
+  assert.equal(nextTickTime(1000, 200, 1400), 1200); // exactly two intervals late: still keep the leftover
 });
 
 test('nextTickTime resyncs to now after a long gap instead of fast-forwarding', () => {

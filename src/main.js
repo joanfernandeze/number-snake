@@ -101,7 +101,9 @@ function frame(now) {
       }
     }
   }
-  if (motion.kind !== 'none') motion.progress = Math.min(1, (now - lastTick) / interval);
+  // The slide lasts the interval that will fire the next tick, which may have just
+  // shortened (score rose on this tick), so read it fresh rather than reusing `interval`.
+  if (motion.kind !== 'none') motion.progress = Math.min(1, (now - lastTick) / Game.tickInterval(game.score));
 
   Fx.update(fx, now, dt);
   $('score').textContent = game.score;

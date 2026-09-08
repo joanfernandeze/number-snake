@@ -10,6 +10,8 @@ export function tickInterval(score) {
 // `now`) lets the leftover time flow into the next slide, so the snake never stands
 // still for a frame at each cell. After a long gap (hidden tab) resync to `now`
 // instead of fast-forwarding through the missed ticks.
+// A frame that lands between one and two intervals late keeps its leftover, so the
+// following frame may tick again almost at once — one extra tick at most, then caught up.
 export function nextTickTime(lastTick, interval, now) {
   const next = lastTick + interval;
   return now - next > interval ? now : next;
