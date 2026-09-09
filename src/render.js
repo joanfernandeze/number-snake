@@ -41,9 +41,7 @@ export function tailDirection(snake) {
     const a = snake.cells[n - 2], b = snake.cells[n - 1];
     return { x: Math.sign(b.x - a.x), y: Math.sign(b.y - a.y) };
   }
-  // `|| 0` turns a negated 0 back into +0: direction components are -1/0/1,
-  // so this never touches a real -1.
-  return { x: -snake.direction.x || 0, y: -snake.direction.y || 0 };
+  return { x: 0 - snake.direction.x, y: 0 - snake.direction.y }; // binary minus: never -0
 }
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -97,7 +95,9 @@ function drawBridge(ctx, a, b, cell, colorA, colorB, vertical) {
 
 // A tapered tip behind the last segment: the snake has a tail, not a junk number.
 // Its base starts inside the segment body (the segment paints over it) and it is
-// clipped to the board so it never spills over the wall frame.
+// clipped to the board so it never spills over the wall frame. Drawn under the
+// tiles (see draw()), so a tile spawned in the cell behind the tail covers the tip
+// instead of the tip painting over the tile.
 function drawTail(ctx, L, last, snake) {
   const d = tailDirection(snake);
   const cell = L.cell, pad = cell * PAD;
@@ -177,22 +177,25 @@ function drawTiles(ctx, L, tiles) {
   }
 }
 
-// motion.kind: 'slide' = whole body glides from its previous cells (normal move)
-//              'grow'  = only the head glides in; the body did not move (eat tick)
-//              'none'  = draw at rest (waiting to start, or game over)
-function drawSnake(ctx, L, snake, motion) {
+// Drawn position of every segment for this frame, head first.
+//   slide: whole body glides from its previous cells (normal move)
+//   grow:  only the head glides in; the body did not move (eat tick)
+//   none:  at rest (waiting to start, or game over)
+function segmentPositions(L, snake, motion) {
   const f = motion.kind === 'none' ? 0 : 1 - motion.progress;
   const dx = -motion.dir.x * f * L.cell, dy = -motion.dir.y * f * L.cell;
-  const pos = snake.cells.map((c, i) => {
+  return snake.cells.map((c, i) => {
     const moves = motion.kind === 'slide' || (motion.kind === 'grow' && i === 0);
     return { px: L.ox + c.x * L.cell + (moves ? dx : 0), py: L.oy + c.y * L.cell + (moves ? dy : 0) };
   });
+}
+
+function drawSnake(ctx, L, snake, pos) {
   // Bridges first so the segments paint over their ends.
   for (let i = 0; i < pos.length - 1; i++) {
     const vertical = snake.cells[i].x === snake.cells[i + 1].x;
     drawBridge(ctx, pos[i], pos[i + 1], L.cell, colorFor(snake.values[i]), colorFor(snake.values[i + 1]), vertical);
   }
-  drawTail(ctx, L, pos[pos.length - 1], snake);
   for (let i = pos.length - 1; i >= 0; i--) { // tail first so the head paints on top
     drawCell(ctx, pos[i].px, pos[i].py, L.cell, colorFor(snake.values[i]), i === 0);
     drawNumber(ctx, pos[i].px, pos[i].py, L.cell, snake.values[i]);
@@ -297,10 +300,12 @@ export function draw(ctx, view, game, fx, now, motion) {
   if (fx.shake && now < fx.shake.until) {
     ctx.translate((Math.random() - 0.5) * fx.shake.mag, (Math.random() - 0.5) * fx.shake.mag);
   }
+  const pos = segmentPositions(L, game.snake, motion);
   drawBoard(ctx, L);
   drawWalls(ctx, L);
+  drawTail(ctx, L, pos[pos.length - 1], game.snake); // under the tiles: a tile behind the tail covers the tip
   drawTiles(ctx, L, game.board.tiles);
-  drawSnake(ctx, L, game.snake, motion);
+  drawSnake(ctx, L, game.snake, pos);
   drawDeath(ctx, L, fx, now);
   drawRings(ctx, L, fx, now);
   drawParticles(ctx, L, fx, now);

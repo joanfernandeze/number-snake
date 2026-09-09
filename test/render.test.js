@@ -50,6 +50,8 @@ test('tailDirection points away from the body, or backwards for a lone head', ()
   assert.deepEqual(tailDirection(s), { x: 0, y: 1 });
   s.cells = [{ x: 3, y: 5 }, { x: 4, y: 5 }];       // body to the right: tail points right
   assert.deepEqual(tailDirection(s), { x: 1, y: 0 });
+  s.cells = [{ x: 3, y: 5 }, { x: 3, y: 4 }];       // body above: tail points up
+  assert.deepEqual(tailDirection(s), { x: 0, y: -1 });
   const one = createSnake(1, 2, { x: 3, y: 5 }, UP);
   assert.deepEqual(tailDirection(one), { x: 0, y: 1 }); // opposite the heading
 });
