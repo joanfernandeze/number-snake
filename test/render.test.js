@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { layout, colorFor, eyeOffsets } from '../src/render.js';
+import { layout, colorFor, eyeOffsets, tailDirection } from '../src/render.js';
 import { POWER_COLORS, FALLBACK_COLOR } from '../src/constants.js';
+import { createSnake } from '../src/snake.js';
 
 test('layout fits a 7x11 grid into the view and centres it', () => {
   const L = layout({ width: 420, height: 660 }, 7, 11);
@@ -41,4 +42,14 @@ test('eyeOffsets puts both eyes on the leading edge, spread across it', () => {
   const [c, d] = eyeOffsets({ x: 1, y: 0 }, 100); // heading right
   near(c.dx, 36); near(d.dx, 36);
   near(Math.abs(c.dy), 18); near(c.dy, -d.dy);
+});
+
+test('tailDirection points away from the body, or backwards for a lone head', () => {
+  const UP = { x: 0, y: -1 };
+  const s = createSnake(3, 2, { x: 3, y: 5 }, UP); // cells (3,5),(3,6),(3,7): tail points down
+  assert.deepEqual(tailDirection(s), { x: 0, y: 1 });
+  s.cells = [{ x: 3, y: 5 }, { x: 4, y: 5 }];       // body to the right: tail points right
+  assert.deepEqual(tailDirection(s), { x: 1, y: 0 });
+  const one = createSnake(1, 2, { x: 3, y: 5 }, UP);
+  assert.deepEqual(tailDirection(one), { x: 0, y: 1 }); // opposite the heading
 });

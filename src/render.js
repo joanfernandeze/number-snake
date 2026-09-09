@@ -33,6 +33,19 @@ export function eyeOffsets(dir, cell) {
   ];
 }
 
+// Where the tail tip points: away from the segment before it, or straight back from
+// the heading when the snake is a single segment.
+export function tailDirection(snake) {
+  const n = snake.cells.length;
+  if (n >= 2) {
+    const a = snake.cells[n - 2], b = snake.cells[n - 1];
+    return { x: Math.sign(b.x - a.x), y: Math.sign(b.y - a.y) };
+  }
+  // `|| 0` turns a negated 0 back into +0: direction components are -1/0/1,
+  // so this never touches a real -1.
+  return { x: -snake.direction.x || 0, y: -snake.direction.y || 0 };
+}
+
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -80,6 +93,33 @@ function drawBridge(ctx, a, b, cell, colorA, colorB, vertical) {
     ctx.fillStyle = colorA; ctx.fillRect(Math.min(acx, mx), y, Math.abs(mx - acx), w);
     ctx.fillStyle = colorB; ctx.fillRect(Math.min(bcx, mx), y, Math.abs(mx - bcx), w);
   }
+}
+
+// A tapered tip behind the last segment: the snake has a tail, not a junk number.
+// Its base starts inside the segment body (the segment paints over it) and it is
+// clipped to the board so it never spills over the wall frame.
+function drawTail(ctx, L, last, snake) {
+  const d = tailDirection(snake);
+  const cell = L.cell, pad = cell * PAD;
+  const cx = last.px + cell / 2, cy = last.py + cell / 2;
+  const half = (cell - pad * 2) / 2 * 0.8;     // a little narrower than the body
+  const base = cell / 2 - pad * 2;             // inside the body's back edge
+  const len = cell * 0.55;                     // how far the tip reaches past the body
+  const bx = cx + d.x * base, by = cy + d.y * base;
+  const ax = cx + d.x * (base + len), ay = cy + d.y * (base + len);
+  const px = -d.y, py = d.x;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(L.ox, L.oy, L.cols * cell, L.rows * cell);
+  ctx.clip();
+  ctx.fillStyle = colorFor(snake.values[snake.values.length - 1]);
+  ctx.beginPath();
+  ctx.moveTo(bx + px * half, by + py * half);
+  ctx.quadraticCurveTo(ax + px * half * 0.3, ay + py * half * 0.3, ax, ay);
+  ctx.quadraticCurveTo(ax - px * half * 0.3, ay - py * half * 0.3, bx - px * half, by - py * half);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawHeadOutline(ctx, px, py, cell) {
@@ -152,6 +192,7 @@ function drawSnake(ctx, L, snake, motion) {
     const vertical = snake.cells[i].x === snake.cells[i + 1].x;
     drawBridge(ctx, pos[i], pos[i + 1], L.cell, colorFor(snake.values[i]), colorFor(snake.values[i + 1]), vertical);
   }
+  drawTail(ctx, L, pos[pos.length - 1], snake);
   for (let i = pos.length - 1; i >= 0; i--) { // tail first so the head paints on top
     drawCell(ctx, pos[i].px, pos[i].py, L.cell, colorFor(snake.values[i]), i === 0);
     drawNumber(ctx, pos[i].px, pos[i].py, L.cell, snake.values[i]);

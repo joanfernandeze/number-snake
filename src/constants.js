@@ -14,8 +14,8 @@ export const SPAWN = {
 };
 
 export const START = {
-  snakeLength: 2,
-  snakeValue: 2,                 // every starting segment holds this value
+  snakeLength: 1,
+  snakeValue: 2,                 // a lone head; the tail is drawn, not a number, so nothing is stuck behind you
   direction: { x: 0, y: -1 },    // moving up (y grows downward on the grid)
 };
 

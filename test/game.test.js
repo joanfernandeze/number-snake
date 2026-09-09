@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
 import { createGame, step, startRun, tickInterval, nextTickTime } from '../src/game.js';
-import { SPAWN, TIMING } from '../src/constants.js';
+import { SPAWN, TIMING, START } from '../src/constants.js';
 
 const UP = { x: 0, y: -1 }, DOWN = { x: 0, y: 1 };
 
@@ -24,7 +24,8 @@ test('nextTickTime resyncs to now after a long gap instead of fast-forwarding', 
 
 test('createGame seeds a snake and fills the board', () => {
   const g = createGame(createRng(1));
-  assert.ok(g.snake.cells.length >= 2);
+  assert.equal(g.snake.cells.length, START.snakeLength);
+  assert.equal(START.snakeLength, 1); // a lone head: no permanent junk segment behind it
   assert.equal(g.board.tiles.length, 3);
   assert.equal(g.over, false);
   assert.equal(g.score, 0);
