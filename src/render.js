@@ -77,20 +77,30 @@ function drawNumber(ctx, px, py, cell, value) {
 // Fill the gap between two neighbouring segments so the body reads as one snake.
 // Each half takes its own segment's colour. `vertical` comes from the grid cells, so
 // the bridge stays axis-aligned while the head slides in on an eat tick.
-function drawBridge(ctx, a, b, cell, colorA, colorB, vertical) {
-  const pad = cell * PAD, w = cell - pad * 2;
-  const acx = a.px + cell / 2, acy = a.py + cell / 2;
-  const bcx = b.px + cell / 2, bcy = b.py + cell / 2;
-  const mx = (acx + bcx) / 2, my = (acy + bcy) / 2;
-  if (vertical) {
-    const x = a.px + pad;
-    ctx.fillStyle = colorA; ctx.fillRect(x, Math.min(acy, my), w, Math.abs(my - acy));
-    ctx.fillStyle = colorB; ctx.fillRect(x, Math.min(bcy, my), w, Math.abs(my - bcy));
-  } else {
-    const y = a.py + pad;
-    ctx.fillStyle = colorA; ctx.fillRect(Math.min(acx, mx), y, Math.abs(mx - acx), w);
-    ctx.fillStyle = colorB; ctx.fillRect(Math.min(bcx, mx), y, Math.abs(mx - bcx), w);
+// The connector between two neighbouring segments. Mid-turn the two centres share no
+// axis, so the run leaves A along A's own axis of travel, bends at the elbow and
+// reaches B: the body rounds the corner instead of snapping through it.
+function drawBridge(ctx, a, b, cell, colorA, colorB) {
+  const half = (cell - cell * PAD * 2) / 2, w = half * 2;
+  const A = { x: a.px + cell / 2, y: a.py + cell / 2 };
+  const B = { x: b.px + cell / 2, y: b.py + cell / 2 };
+  const bar = (color, p, q) => {
+    const dx = Math.abs(q.x - p.x), dy = Math.abs(q.y - p.y);
+    ctx.fillStyle = color;
+    if (dx >= dy) ctx.fillRect(Math.min(p.x, q.x), Math.min(p.y, q.y) - half, dx, w);
+    else ctx.fillRect(Math.min(p.x, q.x) - half, Math.min(p.y, q.y), w, dy);
+  };
+  if (A.x === B.x || A.y === B.y) { // straight: half the run in each colour
+    const m = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+    bar(colorA, A, m);
+    bar(colorB, B, m);
+    return;
   }
+  const elbow = a.vertical ? { x: A.x, y: B.y } : { x: B.x, y: A.y };
+  ctx.fillStyle = colorB; // fills the outer corner the two bars would leave open
+  ctx.fillRect(elbow.x - half, elbow.y - half, w, w);
+  bar(colorA, A, elbow);
+  bar(colorB, B, elbow);
 }
 
 // A tapered tip behind the last segment: the snake has a tail, not a junk number.
@@ -177,24 +187,39 @@ function drawTiles(ctx, L, tiles) {
   }
 }
 
-// Drawn position of every segment for this frame, head first.
-//   slide: whole body glides from its previous cells (normal move)
-//   grow:  only the head glides in; the body did not move (eat tick)
-//   none:  at rest (waiting to start, or game over)
-function segmentPositions(L, snake, motion) {
-  const f = motion.kind === 'none' ? 0 : 1 - motion.progress;
-  const dx = -motion.dir.x * f * L.cell, dy = -motion.dir.y * f * L.cell;
+// Grid cell every current segment came from, index-aligned to snake.cells.
+//   slide: the whole body advanced, so segment i held prevCells[i] one tick ago
+//   grow:  only the head came in; the body did not move, so it starts where it is
+// One shared heading cannot express a turn (the segments behind the corner are still
+// running along the old axis), which is why each segment carries its own origin.
+export function motionFrom(kind, prevCells, cells) {
+  return cells.map((c, i) => {
+    const from = kind === 'grow' ? (i === 0 ? prevCells[0] : c) : (prevCells[i] || c);
+    return { x: from.x, y: from.y };
+  });
+}
+
+// Drawn position of every segment for this frame, head first: each one walks its own
+// single-cell step from motion.from toward its current cell. `vertical`/`moving`
+// describe that step so drawBridge can bend the connector at a corner.
+// At rest (waiting to start, or game over) the body sits on the grid.
+export function segmentPositions(L, snake, motion) {
+  const p = motion.kind === 'none' || !motion.from ? 1 : motion.progress;
   return snake.cells.map((c, i) => {
-    const moves = motion.kind === 'slide' || (motion.kind === 'grow' && i === 0);
-    return { px: L.ox + c.x * L.cell + (moves ? dx : 0), py: L.oy + c.y * L.cell + (moves ? dy : 0) };
+    const f = (motion.from && motion.from[i]) || c;
+    return {
+      px: L.ox + (f.x + (c.x - f.x) * p) * L.cell,
+      py: L.oy + (f.y + (c.y - f.y) * p) * L.cell,
+      vertical: f.x === c.x && f.y !== c.y,
+      moving: f.x !== c.x || f.y !== c.y,
+    };
   });
 }
 
 function drawSnake(ctx, L, snake, pos) {
   // Bridges first so the segments paint over their ends.
   for (let i = 0; i < pos.length - 1; i++) {
-    const vertical = snake.cells[i].x === snake.cells[i + 1].x;
-    drawBridge(ctx, pos[i], pos[i + 1], L.cell, colorFor(snake.values[i]), colorFor(snake.values[i + 1]), vertical);
+    drawBridge(ctx, pos[i], pos[i + 1], L.cell, colorFor(snake.values[i]), colorFor(snake.values[i + 1]));
   }
   for (let i = pos.length - 1; i >= 0; i--) { // tail first so the head paints on top
     drawCell(ctx, pos[i].px, pos[i].py, L.cell, colorFor(snake.values[i]), i === 0);

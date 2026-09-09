@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { layout, colorFor, eyeOffsets, tailDirection } from '../src/render.js';
+import { layout, colorFor, eyeOffsets, tailDirection, motionFrom, segmentPositions } from '../src/render.js';
 import { POWER_COLORS, FALLBACK_COLOR } from '../src/constants.js';
 import { createSnake } from '../src/snake.js';
 
@@ -54,4 +54,39 @@ test('tailDirection points away from the body, or backwards for a lone head', ()
   assert.deepEqual(tailDirection(s), { x: 0, y: -1 });
   const one = createSnake(1, 2, { x: 3, y: 5 }, UP);
   assert.deepEqual(tailDirection(one), { x: 0, y: 1 }); // opposite the heading
+});
+
+test('motionFrom on a slide starts every segment at the cell it held last tick', () => {
+  // Body ran right along y=3, then the head turned up.
+  const prev = [{ x: 5, y: 3 }, { x: 4, y: 3 }, { x: 3, y: 3 }];
+  const cells = [{ x: 5, y: 2 }, { x: 5, y: 3 }, { x: 4, y: 3 }];
+  assert.deepEqual(motionFrom('slide', prev, cells), prev);
+});
+
+test('motionFrom on a grow only moves the head; the body is already in place', () => {
+  const prev = [{ x: 5, y: 3 }, { x: 4, y: 3 }];
+  const cells = [{ x: 5, y: 2 }, { x: 5, y: 3 }, { x: 4, y: 3 }];
+  assert.deepEqual(motionFrom('grow', prev, cells), [{ x: 5, y: 3 }, { x: 5, y: 3 }, { x: 4, y: 3 }]);
+});
+
+test('segmentPositions walks each segment along its own step, not one shared heading', () => {
+  const L = layout({ width: 420, height: 660 }, 7, 11); // cell 60, ox/oy 0
+  const snake = { cells: [{ x: 5, y: 2 }, { x: 5, y: 3 }, { x: 4, y: 3 }] };
+  const from = [{ x: 5, y: 3 }, { x: 4, y: 3 }, { x: 3, y: 3 }];
+  const pos = segmentPositions(L, snake, { kind: 'slide', progress: 0.5, from });
+  // The head rises while the segment behind the corner still runs right: the body
+  // never leaves its own path, which is what the old shared-offset slide broke.
+  assert.deepEqual(pos[0], { px: 300, py: 150, vertical: true, moving: true });
+  assert.deepEqual(pos[1], { px: 270, py: 180, vertical: false, moving: true });
+  assert.deepEqual(pos[2], { px: 210, py: 180, vertical: false, moving: true });
+});
+
+test('segmentPositions holds the body still at rest and lands it on the grid when done', () => {
+  const L = layout({ width: 420, height: 660 }, 7, 11);
+  const snake = { cells: [{ x: 1, y: 1 }, { x: 1, y: 2 }] };
+  const rest = segmentPositions(L, snake, { kind: 'none', progress: 1 });
+  assert.deepEqual(rest.map(p => [p.px, p.py]), [[60, 60], [60, 120]]);
+  const from = [{ x: 1, y: 2 }, { x: 1, y: 3 }];
+  const done = segmentPositions(L, snake, { kind: 'slide', progress: 1, from });
+  assert.deepEqual(done.map(p => [p.px, p.py]), [[60, 60], [60, 120]]);
 });

@@ -51,7 +51,7 @@ function start() {
   const seed = (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0;
   game = Game.createGame(createRng(seed));
   fx = Fx.createFx();
-  motion = { kind: 'none', dir: { ...game.snake.direction }, progress: 1 };
+  motion = { kind: 'none', progress: 1 };
   lastTick = performance.now();
   $('overlay').classList.add('hidden');
   $('stats').classList.add('hidden');
@@ -68,7 +68,7 @@ function onDirection(dir) {
 function onGameOver(ev, now) {
   Fx.addShake(fx, now);
   Fx.addDeath(fx, ev.cause, now);
-  motion = { kind: 'none', dir: { ...game.snake.direction }, progress: 1 };
+  motion = { kind: 'none', progress: 1 };
   if (game.bestTile > best.tile) best.tile = game.bestTile;
   if (game.score > best.score) best.score = game.score;
   if (game.bestCombo > best.combo) best.combo = game.bestCombo;
@@ -92,12 +92,14 @@ function frame(now) {
   const interval = Game.tickInterval(game.score);
 
   if (game.started && !game.over && now - lastTick >= interval) {
+    const prevCells = game.snake.cells.map(c => ({ x: c.x, y: c.y })); // where the body slides from
     const ev = Game.step(game);
     lastTick = Game.nextTickTime(lastTick, interval, now);
     if (ev.over) {
       onGameOver(ev, now);
     } else {
-      motion = { kind: ev.ate ? 'grow' : 'slide', dir: { ...game.snake.direction }, progress: 0 };
+      const kind = ev.ate ? 'grow' : 'slide';
+      motion = { kind, progress: 0, from: Render.motionFrom(kind, prevCells, game.snake.cells) };
       if (ev.merges > 0) {
         Fx.addMerge(fx, ev.cell, ev.merges, Render.colorFor(game.snake.values[0]), now);
         if (run.firstMergeMs === null) run.firstMergeMs = Math.round(now - run.t0);
