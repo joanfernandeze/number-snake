@@ -1,7 +1,7 @@
 export const GRID = { cols: 7, rows: 11 };
 
 export const TIMING = {
-  tickStartMs: 800,     // tick interval at score 0
+  tickStartMs: 533,     // tick interval at score 0 (800/1.5: half again as fast off the line)
   tickFloorMs: 300,     // the interval the climb approaches; an asymptote, never reached
   halfLifeScore: 900,   // points that close half the remaining gap to the floor
   smoothTauMs: 1200,    // a change in target speed eases in over roughly this long
