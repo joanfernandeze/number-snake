@@ -148,6 +148,6 @@ git commit -m "feat(stats): show and copy the spec metrics from the game-over pa
 ### Task 2: Publish on GitHub Pages (main agent, with the author)
 
 - [x] Add an empty `.nojekyll` at the repo root (Pages serves the folder as-is).
-- [ ] Create a public GitHub repo, push `main`, enable Pages from `main` / root.
+- [x] Create a public GitHub repo, push `main`, enable Pages from `main` / root.
 - [ ] Open `https://<user>.github.io/<repo>/` on a phone; hard-refresh after each push.
-- [ ] Put the public URL at the top of `docs/PLAYTEST.md`.
+- [x] Put the public URL at the top of `docs/PLAYTEST.md`.

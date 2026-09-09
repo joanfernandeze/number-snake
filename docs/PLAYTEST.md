@@ -1,5 +1,7 @@
 # Number Snake — Playtest guide (v0.1 feel pass)
 
+**Play it:** https://joanfernandeze.github.io/number-snake/ — GitHub Pages, redeploys a minute or two after each push to `main`. Source: https://github.com/joanfernandeze/number-snake
+
 **Question to answer:** does eat → merge → cascade → don't-trap-yourself pull *voluntary* retries?
 Spec: `docs/superpowers/specs/2026-06-30-number-snake-design.md` (§2 targets).
 What changed for this pass: `docs/superpowers/plans/2026-09-08-feel-pass.md`.
