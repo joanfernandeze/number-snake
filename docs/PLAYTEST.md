@@ -53,12 +53,15 @@ node tools/simulate.js
 node tools/simulate.js --window=head --decay=0.6
 ```
 
-### Simulator baseline (2026-09-08, 300 runs each, greedy "plays for matches" policy)
+### Simulator baseline (2026-09-09, lone-head start, 300 runs each, greedy "plays for matches" policy)
 
 | Config                        | Median best tile | Reach ≥128 | Reach ≥256 | Deaths self / wall |
 | ----------------------------- | ---------------- | ---------- | ---------- | ------------------ |
-| `window=max` (current default) | 64              | 14 %       | 0 %        | 234 / 66           |
-| `window=head`                 | 128              | 80 %       | 35 %       | 197 / 103          |
+| `window=max` (current default) | 64              | 20 %       | 0 %        | 238 / 62           |
+| `window=head`                 | 128              | 84 %       | 46 %       | 188 / 112          |
+
+(Before the lone-head start, on 2026-09-08: `max` 64 / 14 % / 0 %, `head` 128 / 80 % / 35 %. Dropping the
+permanently stuck tail `2` helped the climb a little in both configs.)
 
 The head-relative window removes the tile-64 plateau in simulation. It is **not** switched on by
 default: the spec (§14) leaves the spawn rule to feel, and a much easier climb may also make runs
