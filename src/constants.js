@@ -2,7 +2,7 @@ export const GRID = { cols: 7, rows: 11 };
 
 export const TIMING = {
   tickStartMs: 355,     // tick interval at score 0
-  tickFloorMs: 167,     // the interval the climb approaches; an asymptote, never reached
+  tickFloorMs: 119,     // the interval the climb approaches; an asymptote, never reached
   halfLifeScore: 300,   // points that close half the remaining gap to the floor
   smoothTauMs: 1200,    // a change in target speed eases in over roughly this long
   turnEarlyFrac: 0.55,  // a queued turn may fire its tick once this much of the slide has played
