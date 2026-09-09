@@ -15,7 +15,7 @@ What changed for this pass: `docs/superpowers/plans/2026-09-08-feel-pass.md`.
 1. Hand over the phone with **no explanation**. Say only: "try this".
 2. Watch silently. Tally runs. Note the moment they visibly get "same numbers merge".
 3. Stop when *they* stop. Then ask: (a) did any death feel unfair? (b) what were you trying to do?
-4. Open DevTools (or ask them to) and run `numberSnakeStats()`; screenshot it.
+4. On the Game Over panel tap **Stats**, then **Copy**, and have them paste the text to you (a screenshot also works). On a desktop, `numberSnakeStats()` in DevTools returns the same data.
 
 ## Reading the numbers
 Every game over logs `[Number Snake] run {...}` and `[Number Snake] stats {...}` to the console.
