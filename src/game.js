@@ -2,8 +2,32 @@ import { GRID, TIMING, START, SPAWN } from './constants.js';
 import * as Snake from './snake.js';
 import * as Board from './board.js';
 
-export function tickInterval(score) {
-  return Math.max(TIMING.tickFloorMs, TIMING.tickStartMs - score * TIMING.tickPerPoint);
+// The interval the run is climbing toward at this score. The gap to the floor halves
+// every TIMING.halfLifeScore points, so each point shaves less off than the one before:
+// a 200-point cascade late in a run barely moves the speed, where the old linear ramp
+// lurched by the same amount whenever it was paid. It approaches the floor without ever
+// reaching it, so there is no wall where the climb suddenly stops.
+export function targetInterval(score) {
+  const { tickStartMs, tickFloorMs, halfLifeScore } = TIMING;
+  const gap = tickStartMs - tickFloorMs;
+  return tickFloorMs + gap * Math.pow(2, -Math.max(0, score) / halfLifeScore);
+}
+
+// Ease the live interval toward that target rather than snapping to it. Score arrives in
+// lumps — one bite can pay for a whole cascade — and a step change in speed reads as a
+// jolt even when it is small. Framerate-independent: the fraction of the gap closed
+// depends only on how much time passed, so 30fps and 120fps ramp identically.
+export function smoothInterval(current, target, dt, tau = TIMING.smoothTauMs) {
+  if (!(dt > 0)) return current;
+  return current + (target - current) * (1 - Math.exp(-dt / tau));
+}
+
+// Is a step due? A queued turn fires its tick early, once most of the slide has played
+// out, so a swipe lands within a fraction of a cell instead of waiting out the whole
+// interval — the difference between steering the snake and asking it politely.
+export function tickDue(elapsed, interval, hasTurn) {
+  if (elapsed >= interval) return true;
+  return hasTurn && elapsed >= interval * TIMING.turnEarlyFrac;
 }
 
 // Clock for the next tick after stepping at `now`. Advancing by one interval (not to

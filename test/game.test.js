@@ -1,15 +1,54 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
-import { createGame, step, startRun, tickInterval, nextTickTime } from '../src/game.js';
+import { createGame, step, startRun, targetInterval, smoothInterval, tickDue, nextTickTime } from '../src/game.js';
 import { SPAWN, TIMING, START } from '../src/constants.js';
 
 const UP = { x: 0, y: -1 }, DOWN = { x: 0, y: 1 };
 
-test('tickInterval starts at the configured gentle tick and clamps at the floor', () => {
-  assert.equal(tickInterval(0), TIMING.tickStartMs);
-  assert.equal(tickInterval(100000), TIMING.tickFloorMs); // clamped
-  assert.ok(tickInterval(100) < tickInterval(0)); // speeds up with score
+test('targetInterval starts at the gentle tick and approaches the floor from above', () => {
+  assert.equal(targetInterval(0), TIMING.tickStartMs);
+  assert.ok(targetInterval(100) < targetInterval(0));             // speeds up with score
+  // An asymptote, not a wall: still above the floor at a score no run will see, and
+  // close enough to it there that the last stretch of the climb is imperceptible.
+  const unreachable = TIMING.halfLifeScore * 12;
+  assert.ok(targetInterval(unreachable) > TIMING.tickFloorMs);
+  assert.ok(targetInterval(unreachable) - TIMING.tickFloorMs < 1);
+});
+
+test('targetInterval closes half the gap to the floor every halfLifeScore points', () => {
+  const gap = (score) => targetInterval(score) - TIMING.tickFloorMs;
+  const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} !== ${b}`);
+  near(gap(TIMING.halfLifeScore), gap(0) / 2);
+  near(gap(TIMING.halfLifeScore * 2), gap(0) / 4);
+});
+
+test('targetInterval shaves less off per point as the score grows', () => {
+  // The whole point of the geometric curve: a 200-point cascade late in a run must not
+  // move the speed the way the same 200 points did at the start.
+  const early = targetInterval(0) - targetInterval(200);
+  const late = targetInterval(1000) - targetInterval(1200);
+  // The exact ratio is pinned by the half-life test above; this one guards the intent.
+  assert.ok(late < early * 0.7, `late ${late} not much gentler than early ${early}`);
+});
+
+test('smoothInterval eases toward the target instead of snapping to it', () => {
+  const step = smoothInterval(800, 600, 100, 1200); // one frame-ish of catching up
+  assert.ok(step < 800 && step > 780, `moved too far in one frame: ${step}`);
+  // A dt of one tau covers ~63% of the gap, whatever the framerate.
+  const once = smoothInterval(800, 600, 1200, 1200);
+  const twice = smoothInterval(smoothInterval(800, 600, 600, 1200), 600, 600, 1200);
+  assert.ok(Math.abs(once - twice) < 1e-9, 'not framerate-independent');
+  assert.ok(Math.abs(once - (600 + 200 * Math.exp(-1))) < 1e-9);
+  assert.equal(smoothInterval(800, 600, 0, 1200), 800); // a zero-length frame changes nothing
+});
+
+test('tickDue fires on time, and early when a turn is waiting', () => {
+  const iv = 800, early = iv * TIMING.turnEarlyFrac;
+  assert.equal(tickDue(iv, iv, false), true);
+  assert.equal(tickDue(iv - 1, iv, false), false);       // no turn: wait it out
+  assert.equal(tickDue(early, iv, true), true);          // turn queued: land it now
+  assert.equal(tickDue(early - 1, iv, true), false);     // ... but not before the slide has read
 });
 
 test('nextTickTime advances by one interval so leftover time carries into the next slide', () => {

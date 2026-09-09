@@ -40,7 +40,7 @@ function fitCanvas() {
 }
 
 let best = loadBest();
-let game, fx, lastTick, motion, prevNow;
+let game, fx, lastTick, motion, prevNow, interval;
 
 const SESSION = Date.now().toString(36); // one page load = one "player session"
 let runs = loadRuns();
@@ -52,6 +52,7 @@ function start() {
   game = Game.createGame(createRng(seed));
   fx = Fx.createFx();
   motion = { kind: 'none', progress: 1 };
+  interval = Game.targetInterval(0);
   lastTick = performance.now();
   $('overlay').classList.add('hidden');
   $('stats').classList.add('hidden');
@@ -89,12 +90,17 @@ function onGameOver(ev, now) {
 function frame(now) {
   const dt = prevNow === undefined ? 0 : now - prevNow;
   prevNow = now;
-  const interval = Game.tickInterval(game.score);
+  interval = Game.smoothInterval(interval, Game.targetInterval(game.score), dt);
 
-  if (game.started && !game.over && now - lastTick >= interval) {
+  const elapsed = now - lastTick;
+  if (game.started && !game.over && Game.tickDue(elapsed, interval, game.snake.queue.length > 0)) {
+    const early = elapsed < interval; // a queued turn cut the slide short
     const prevCells = game.snake.cells.map(c => ({ x: c.x, y: c.y })); // where the body slides from
     const ev = Game.step(game);
-    lastTick = Game.nextTickTime(lastTick, interval, now);
+    // An early tick starts its slide now — advancing by a full interval would put the
+    // clock ahead of `now` and run the next slide backwards. A tick that came due keeps
+    // its leftover time so the body never stands still for a frame.
+    lastTick = early ? now : Game.nextTickTime(lastTick, interval, now);
     if (ev.over) {
       onGameOver(ev, now);
     } else {
@@ -106,9 +112,9 @@ function frame(now) {
       }
     }
   }
-  // The slide lasts the interval that will fire the next tick, which may have just
-  // shortened (score rose on this tick), so read it fresh rather than reusing `interval`.
-  if (motion.kind !== 'none') motion.progress = Math.min(1, (now - lastTick) / Game.tickInterval(game.score));
+  // The slide lasts as long as the interval that will fire the next tick. That interval
+  // eases rather than jumps, so the slide it paces cannot lurch either.
+  if (motion.kind !== 'none') motion.progress = Math.min(1, (now - lastTick) / interval);
 
   Fx.update(fx, now, dt);
   $('score').textContent = game.score;

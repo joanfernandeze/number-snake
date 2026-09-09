@@ -1,9 +1,11 @@
 export const GRID = { cols: 7, rows: 11 };
 
 export const TIMING = {
-  tickStartMs: 700,   // tick interval at score 0 — the opening runs at 60% of the old speed
-  tickFloorMs: 80,    // fastest tick interval
-  tickPerPoint: 0.15, // ms shaved off the interval per point of score; a very long, gentle climb
+  tickStartMs: 800,     // tick interval at score 0
+  tickFloorMs: 300,     // the interval the climb approaches; an asymptote, never reached
+  halfLifeScore: 900,   // points that close half the remaining gap to the floor
+  smoothTauMs: 1200,    // a change in target speed eases in over roughly this long
+  turnEarlyFrac: 0.55,  // a queued turn may fire its tick once this much of the slide has played
 };
 
 export const SPAWN = {
@@ -38,7 +40,7 @@ export const STORAGE_KEY = 'numberSnake.best';
 
 export const INPUT = {
   queueDepth: 2,        // buffered turns: a fast LEFT-then-UP lands both
-  swipeThresholdPx: 16, // finger travel before a swipe registers (fires on move, not on lift)
+  swipeThresholdPx: 12, // finger travel before a swipe registers (fires on move, not on lift)
   turnBias: 1.5,        // mid-drag axis change needs the new axis to dominate by this factor
 };
 
