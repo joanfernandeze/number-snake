@@ -1,9 +1,9 @@
 export const GRID = { cols: 7, rows: 11 };
 
 export const TIMING = {
-  tickStartMs: 170,   // tick interval at score 0 (gentle)
+  tickStartMs: 340,   // tick interval at score 0 — half the old opening speed, so the run starts calm
   tickFloorMs: 80,    // fastest tick interval
-  tickPerPoint: 0.6,  // ms shaved off the interval per point of score
+  tickPerPoint: 1.2,  // ms shaved off the interval per point of score; floor reached around score 217
 };
 
 export const SPAWN = {
