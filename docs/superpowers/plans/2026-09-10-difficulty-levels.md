@@ -51,7 +51,7 @@ docs/PLAYTEST.md     MODIFY  levels and the new baseline                      (T
 
 **Files:** modify `src/constants.js`, `src/board.js`, `src/game.js`, `test/game.test.js`, `test/board.test.js`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `test/game.test.js`, change the constants import to `import { SPAWN, TIMING, START, DIFFICULTIES, DEFAULT_DIFFICULTY } from '../src/constants.js';` and replace the test named `'tickInterval starts at the configured gentle tick and clamps at the floor'` (or whatever the current `targetInterval` test is called — search for `targetInterval`) with:
 
@@ -139,9 +139,9 @@ test('refill and spawnTile take their tile count and bias from the caller', () =
 });
 ```
 
-- [ ] **Step 2: Run to verify failure** — `node --test test/game.test.js test/board.test.js` → FAIL (`DIFFICULTIES` undefined, `targetInterval` takes one argument, `refill` ignores decay).
+- [x] **Step 2: Run to verify failure** — `node --test test/game.test.js test/board.test.js` → FAIL (`DIFFICULTIES` undefined, `targetInterval` takes one argument, `refill` ignores decay).
 
-- [ ] **Step 3: Implement `src/constants.js`**
+- [x] **Step 3: Implement `src/constants.js`**
 
 Replace the `TIMING` and `SPAWN` blocks with:
 
@@ -183,7 +183,7 @@ export const DIFFICULTY_KEY = 'numberSnake.difficulty';
 
 Leave `GRID`, `START`, the palette, `STORAGE_KEY`, `INPUT`, `FX`, `DEATH`, `TELEMETRY` and `UI` exactly as they are.
 
-- [ ] **Step 4: Implement `src/board.js`**
+- [x] **Step 4: Implement `src/board.js`**
 
 Change the import to `import { GRID, SPAWN } from './constants.js';` (unchanged) and thread the bias and the count through:
 
@@ -217,7 +217,7 @@ and change `pickValue`'s signature so the default no longer reads a removed cons
 export function pickValue(rng, maxValue, decay = 0.45, base = SPAWN.baseValue) {
 ```
 
-- [ ] **Step 5: Implement `src/game.js`**
+- [x] **Step 5: Implement `src/game.js`**
 
 Change the constants import to:
 
@@ -276,9 +276,9 @@ In `step`, inside the `if (willEat)` branch, add `game.eaten += 1;` immediately 
     Board.refill(b, game.rng, spawnRef(game), s.cells, game.cfg.maxTiles, game.cfg.decay);
 ```
 
-- [ ] **Step 6: Run the tests** — `node --test test/game.test.js test/board.test.js` → all pass. The full suite will still fail in `main.js`-adjacent places only if something imports a removed constant; check with `grep -rn "TIMING.tickStartMs\|SPAWN.maxTiles\|SPAWN.decay\|SPAWN.window\|halfLifeScore" src tools test` and report anything left. `src/main.js` and `tools/simulate.js` are fixed in later tasks, so failures there are expected; note them and move on.
+- [x] **Step 6: Run the tests** — `node --test test/game.test.js test/board.test.js` → all pass. The full suite will still fail in `main.js`-adjacent places only if something imports a removed constant; check with `grep -rn "TIMING.tickStartMs\|SPAWN.maxTiles\|SPAWN.decay\|SPAWN.window\|halfLifeScore" src tools test` and report anything left. `src/main.js` and `tools/simulate.js` are fixed in later tasks, so failures there are expected; note them and move on.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/constants.js src/board.js src/game.js test/game.test.js test/board.test.js
@@ -293,7 +293,7 @@ git commit -m "feat(difficulty): three levels; the speed ramp keys off tiles eat
 
 **Why:** with three levels, runs mixed together tell us nothing. Every record must say which level it was.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `test/telemetry.test.js`, update the `buildRun` test to pass and expect the level, and add a `formatStats` case. Replace the existing `buildRun` test with:
 
@@ -335,9 +335,9 @@ test('summarize copes with records from before levels existed', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure** — `node --test test/telemetry.test.js` → FAIL.
+- [x] **Step 2: Run to verify failure** — `node --test test/telemetry.test.js` → FAIL.
 
-- [ ] **Step 3: Implement** — in `src/telemetry.js`:
+- [x] **Step 3: Implement** — in `src/telemetry.js`:
 
 In `buildRun`, add `difficulty: game.cfg ? game.cfg.key : 'unknown',` right after `session`, and `eaten: game.eaten,` next to `ticks`.
 
@@ -358,9 +358,9 @@ In `formatStats`, add one line to the array, immediately before the `deaths:` li
 
 If `formatStats` has a test asserting a fixed number of lines, update that count.
 
-- [ ] **Step 4: Run** — `node --test test/telemetry.test.js` → all pass.
+- [x] **Step 4: Run** — `node --test test/telemetry.test.js` → all pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/telemetry.js test/telemetry.test.js
@@ -373,7 +373,7 @@ git commit -m "feat(telemetry): every run records the level it was played on" --
 
 **Files:** modify `tools/simulate.js`
 
-- [ ] **Step 1: Implement**
+- [x] **Step 1: Implement**
 
 Read the file first. It currently mutates `SPAWN` from command-line flags and runs two policies. Replace the argument handling and the bottom of the file so that instead of mutating globals it passes a level config to `createGame`, and reports all three levels for both policies.
 
@@ -384,11 +384,11 @@ Read the file first. It currently mutates `SPAWN` from command-line flags and ru
 - In `summarize`, add a line reporting `avg tiles eaten` and `interval at the median run's tile count`, computed as `targetInterval(medianEaten, cfg)`, so the report shows the speed a real run actually finishes at. Import `targetInterval` from `../src/game.js`.
 - Print a config header per level: `=== LEVEL Classic (start 300ms, floor 120ms, half-life 14 tiles, 3 tiles, window max) ===`.
 
-- [ ] **Step 2: Run** — `node tools/simulate.js --runs=200` and capture the whole output. Then `node tools/simulate.js --runs=50 --level=frenzy`, and `node tools/simulate.js --level=nope` (must exit 1 with a usage message).
+- [x] **Step 2: Run** — `node tools/simulate.js --runs=200` and capture the whole output. Then `node tools/simulate.js --runs=50 --level=frenzy`, and `node tools/simulate.js --level=nope` (must exit 1 with a usage message).
 
-- [ ] **Step 3: Report the table** of median best tile, median run ticks, average tiles eaten and the finishing interval for each level and each policy. Do not tune anything; that is the orchestrator's call.
+- [x] **Step 3: Report the table** of median best tile, median run ticks, average tiles eaten and the finishing interval for each level and each policy. Do not tune anything; that is the orchestrator's call.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tools/simulate.js
@@ -401,7 +401,7 @@ git commit -m "tools: compare the three levels instead of mutating globals" -- t
 
 **Files:** modify `index.html`, `style.css`, `src/main.js`
 
-- [ ] **Step 1: Markup** — in `index.html`, immediately after the `<p id="hint">…</p>` line, add:
+- [x] **Step 1: Markup** — in `index.html`, immediately after the `<p id="hint">…</p>` line, add:
 
 ```html
     <div id="levels" role="group" aria-label="Difficulty">
@@ -411,7 +411,7 @@ git commit -m "tools: compare the three levels instead of mutating globals" -- t
     </div>
 ```
 
-- [ ] **Step 2: Styles** — append to `style.css`:
+- [x] **Step 2: Styles** — append to `style.css`:
 
 ```css
 #levels {
@@ -430,7 +430,7 @@ git commit -m "tools: compare the three levels instead of mutating globals" -- t
 #levels.busy { opacity: .35; pointer-events: none; }
 ```
 
-- [ ] **Step 3: Wire it in `src/main.js`**
+- [x] **Step 3: Wire it in `src/main.js`**
 
 Add `DIFFICULTIES, DEFAULT_DIFFICULTY, DIFFICULTY_KEY` to the constants import.
 
@@ -493,9 +493,9 @@ $('levels').addEventListener('click', (e) => {
 
 and add `paintLevels();` immediately after the initial `start();` call at the bottom of the file.
 
-- [ ] **Step 4: Verify** — `node --test` → all green. `node --check src/main.js`. Confirm every id and `data-level` used by `main.js` exists in `index.html`, and that nothing still reads `game.score` for the ramp (`grep -n "targetInterval" src/main.js`).
+- [x] **Step 4: Verify** — `node --test` → all green. `node --check src/main.js`. Confirm every id and `data-level` used by `main.js` exists in `index.html`, and that nothing still reads `game.score` for the ramp (`grep -n "targetInterval" src/main.js`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add index.html style.css src/main.js
@@ -506,10 +506,10 @@ git commit -m "feat(ui): pick a level; the ramp follows tiles eaten" -- index.ht
 
 ### Task 5: Verify, document, publish (orchestrator)
 
-- [ ] `node --test` all green; simulator gives a three-level table.
-- [ ] Browser: the three buttons appear under the hint with Classic selected; picking one restarts into the waiting state; the row dims once the snake is moving; the choice survives a reload; Chill visibly spawns four tiles and Frenzy two; the speed climb is felt within a single run on Frenzy.
-- [ ] `docs/PLAYTEST.md`: document the levels, say that the playtest runs on **Classic**, and record the new simulator baseline per level.
-- [ ] Push; Pages redeploys.
+- [x] `node --test` all green; simulator gives a three-level table.
+- [x] Browser: the three buttons appear under the hint with Classic selected; picking one restarts into the waiting state; the row dims once the snake is moving; the choice survives a reload; Chill visibly spawns four tiles and Frenzy two; the speed climb is felt within a single run on Frenzy.
+- [x] `docs/PLAYTEST.md`: document the levels, say that the playtest runs on **Classic**, and record the new simulator baseline per level.
+- [x] Push; Pages redeploys.
 
 ---
 
