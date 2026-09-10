@@ -63,6 +63,27 @@ in half. Chill keeps its cadence at 20 because its runs are long; Frenzy deliber
 Classic's 10, because at every 7 the obstacles flattened its climb from a median tile of 64 to 32,
 and a hard level should make the player fail rather than deny them the climb.
 
+## Sound, teaching, and the cascade reward
+
+**Sound** is synthesised with oscillators, so nothing is downloaded. A merge chain climbs one
+note per merge, so a big cascade is audibly bigger; eating without a merge is a quiet blip; an
+obstacle turning solid is a low thud; death slides down. There is a **Sound: on/off** toggle on
+the game-over panel and the choice is remembered.
+
+**Obstacles are telegraphed.** One lands hollow, with a dashed red outline, and blinks for five
+moves before it turns into a solid hazard block. Only the solid ones end a run. If the snake is
+lying across the cell when it would turn solid, the obstacle gives up rather than kill from
+underneath. Watch for whether a tester still calls an obstacle death unfair.
+
+**The merge rule is taught without words.** A player who has never merged sees a white ring
+around every tile matching their head, until their first merge. After that, never again. Chill
+keeps the rings on permanently, which is most of what makes it gentle. Watch how long the rings
+stay on: that is the time-to-first-merge metric, made visible.
+
+**A three-merge chain buys breathing room:** the speed eases by 18 % for twelve moves. Measured
+at about twice a run on Classic, roughly a tenth of the time. At a two-merge threshold it fired
+seven times a run and stopped reading as a reward, which is why the bar is three.
+
 ## Knobs (`src/constants.js`) — symptom → knob
 Speed and content knobs live inside `DIFFICULTIES`, one entry per level, so a change affects only
 that level. Everything else is shared.
@@ -77,6 +98,11 @@ that level. Everything else is shared.
 | Too few routing choices                       | raise `maxTiles`                                               |
 | Obstacles dominate the deaths                 | raise `obstacleEvery`, or lower `OBSTACLE.max` (8)             |
 | An obstacle appeared unfairly close           | raise `OBSTACLE.minHeadDist` (4)                               |
+| Obstacles feel like ambushes                  | raise `OBSTACLE.warnTicks` (5)                                 |
+| The cascade reward goes unnoticed             | lower `RELIEF.minMerges` (3), or raise `RELIEF.factor` (1.18)  |
+| The cascade reward makes the game feel slow   | raise `RELIEF.minMerges`, or lower `RELIEF.ticks` (12)         |
+| Sound is intrusive                            | lower `SOUND.gain` (0.06)                                      |
+| The merge rings are a crutch                  | set `matchHint: false` on Chill                                |
 | Turns feel late                               | lower `INPUT.swipeThresholdPx` (12), or `TIMING.turnEarlyFrac` |
 | Diagonal swipes flip direction                | raise `INPUT.turnBias` (1.5)                                   |
 | Cascades go unnoticed                         | raise `FX.burstMs` / `FX.particlesPerMerge`                    |
@@ -94,9 +120,9 @@ node tools/simulate.js --runs=100 --level=frenzy
 
 | Level   | Median best tile | Tiles eaten | Run length | Cells/s at the end | Deaths: obstacle / self / wall |
 | ------- | ---------------- | ----------- | ---------- | ------------------ | ------------------------------ |
-| Chill   | 128              | 81          | 84 s       | 5.2                | 42 % / 17 % / 40 %             |
-| Classic | 64               | 44          | 44 s       | 7.1                | 32 % / 32 % / 35 %             |
-| Frenzy  | 32               | 42          | 34 s       | 10.2               | 35 % / 31 % / 32 %             |
+| Chill   | 128              | 81          | 90 s       | 5.2                | 44 % / 15 % / 39 %             |
+| Classic | 64               | 44          | 45 s       | 7.1                | 34 % / 31 % / 33 %             |
+| Frenzy  | 32               | 42          | 34 s       | 10.2               | 38 % / 31 % / 30 %             |
 
 Classic sits in the spec's 30–90 s band with the three hazards killing in near-equal thirds, which
 is the balance we want: no single way to die dominates. Note the simulated player only looks one
