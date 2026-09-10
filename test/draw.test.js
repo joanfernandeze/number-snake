@@ -24,7 +24,8 @@ function cornerFrame() {
   return {
     view: { width: 420, height: 660, dpr: 1 }, // cell 60, ox/oy 0
     game: {
-      board: { tiles: [], cols: 7, rows: 11 },
+      // Mirrors createBoard(): the renderer draws obstacles, so a fixture without them lies.
+      board: { tiles: [], obstacles: [], cols: 7, rows: 11 },
       snake: { cells, values: [2, 2, 2], direction: { x: 0, y: -1 }, queue: [] },
       started: true, over: false, score: 0,
     },
