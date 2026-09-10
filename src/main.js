@@ -3,6 +3,7 @@ import * as Game from './game.js';
 import * as Render from './render.js';
 import * as Snake from './snake.js';
 import * as Fx from './fx.js';
+import * as Sound from './sound.js';
 import { initInput } from './input.js';
 import { GRID, STORAGE_KEY, DEATH, UI, DIFFICULTIES, DEFAULT_DIFFICULTY } from './constants.js';
 import { loadRuns, saveRuns, buildRun, summarize, formatStats } from './telemetry.js';
@@ -50,10 +51,17 @@ function paintLevels() {
     b.setAttribute('aria-pressed', String(b.dataset.level === difficulty));
   }
 }
+
+function paintSound() {
+  $('soundToggle').textContent = `Sound: ${Sound.isMuted() ? 'off' : 'on'}`;
+}
 let game, fx, lastTick, motion, prevNow, interval;
 
 const SESSION = Date.now().toString(36); // one page load = one "player session"
 let runs = loadRuns();
+// A player with no runs on record has never merged: ring the matching tiles until they do,
+// then never again. That is the whole tutorial.
+let teaching = runs.length === 0;
 let run; // { session, t0, firstMergeMs } for the run in progress
 window.numberSnakeStats = () => summarize(runs); // call from DevTools during a playtest
 
@@ -62,7 +70,7 @@ function start() {
   game = Game.createGame(createRng(seed), DIFFICULTIES[difficulty]);
   fx = Fx.createFx();
   motion = { kind: 'none', progress: 1 };
-  interval = Game.targetInterval(0, game.cfg);
+  interval = Game.currentTarget(game);
   lastTick = performance.now();
   $('overlay').classList.add('hidden');
   $('stats').classList.add('hidden');
@@ -78,6 +86,7 @@ function onDirection(dir) {
 }
 
 function onGameOver(ev, now) {
+  Sound.playDeath();
   Fx.addShake(fx, now);
   Fx.addDeath(fx, ev.cause, now);
   motion = { kind: 'none', progress: 1 };
@@ -101,7 +110,7 @@ function onGameOver(ev, now) {
 function frame(now) {
   const dt = prevNow === undefined ? 0 : now - prevNow;
   prevNow = now;
-  interval = Game.smoothInterval(interval, Game.targetInterval(game.eaten, game.cfg), dt);
+  interval = Game.smoothInterval(interval, Game.currentTarget(game), dt);
 
   const elapsed = now - lastTick;
   if (game.started && !game.over && Game.tickDue(elapsed, interval, game.snake.queue.length > 0)) {
@@ -119,8 +128,15 @@ function frame(now) {
       motion = { kind, progress: 0, from: Render.motionFrom(kind, prevCells, game.snake.cells) };
       if (ev.merges > 0) {
         Fx.addMerge(fx, ev.cell, ev.merges, Render.colorFor(game.snake.values[0]), now);
+        Sound.playMerge(ev.merges);
+        teaching = false; // they have merged: the lesson is over for good
         if (run.firstMergeMs === null) run.firstMergeMs = Math.round(now - run.t0);
+      } else if (ev.ate) {
+        Sound.playEat();
       }
+      if (ev.obstacle) Fx.addObstacle(fx, ev.obstacle, now);
+      // The thud lands when the block turns solid, which is the moment it starts to matter.
+      if (ev.armed && ev.armed.length) Sound.playObstacle();
     }
   }
   // The slide lasts as long as the interval that will fire the next tick. That interval
@@ -131,7 +147,8 @@ function frame(now) {
   $('score').textContent = game.score;
   $('bestTile').textContent = Math.max(best.tile, game.bestTile);
   ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0); // canvas resizes reset the transform
-  Render.draw(ctx, view, game, fx, now, motion);
+  const hint = game.cfg.matchHint || (teaching && !game.over);
+  Render.draw(ctx, view, game, fx, now, motion, hint);
   requestAnimationFrame(frame);
 }
 
@@ -160,6 +177,10 @@ $('statsCopy').addEventListener('click', async () => {
   note.classList.remove('hidden');
   setTimeout(() => note.classList.add('hidden'), UI.copiedNoteMs);
 });
+$('soundToggle').addEventListener('click', () => {
+  Sound.saveMuted(Sound.setMuted(!Sound.isMuted()));
+  paintSound();
+});
 window.addEventListener('resize', fitCanvas);
 window.addEventListener('orientationchange', fitCanvas);
 // Tapping a level starts a run on it straight away: the panel is already the "play again" moment.
@@ -173,4 +194,6 @@ $('levels').addEventListener('click', (e) => {
 fitCanvas();
 start();
 paintLevels();
+Sound.setMuted(Sound.loadMuted());
+paintSound();
 requestAnimationFrame(frame);

@@ -141,6 +141,9 @@ test('the three levels are ordered: Chill is the gentlest, Frenzy the sharpest',
   assert.ok(chill.maxTiles > classic.maxTiles && classic.maxTiles > frenzy.maxTiles);
   assert.ok(chill.decay > classic.decay && classic.decay > frenzy.decay);
   assert.equal(chill.window, 'head', 'Chill never lets the climb stall');
+  assert.equal(chill.matchHint, true, 'Chill rings the tiles that match your head');
+  assert.equal(classic.matchHint, false);
+  assert.equal(frenzy.matchHint, false);
 });
 
 test('createGame carries its level and counts what it eats', () => {

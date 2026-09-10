@@ -14,20 +14,24 @@ export const SPAWN = {
 // while score arrives late and in lumps, so a score-keyed ramp put the whole climb after
 // the run was effectively over. A typical run eats about 58 tiles.
 export const DIFFICULTIES = {
+  // Chill always rings the tiles that match your head; the other levels only do it while teaching.
   chill: {
     key: 'chill', name: 'Chill',
     tickStartMs: 360, tickFloorMs: 180, halfLifeEats: 20,
     maxTiles: 4, decay: 0.55, window: 'head', obstacleEvery: 20,
+    matchHint: true,
   },
   classic: {
     key: 'classic', name: 'Classic',
     tickStartMs: 300, tickFloorMs: 120, halfLifeEats: 14,
     maxTiles: 3, decay: 0.45, window: 'max', obstacleEvery: 10,
+    matchHint: false,
   },
   frenzy: {
     key: 'frenzy', name: 'Frenzy',
     tickStartMs: 240, tickFloorMs: 90, halfLifeEats: 10,
     maxTiles: 2, decay: 0.35, window: 'max', obstacleEvery: 10,
+    matchHint: false,
   },
 };
 
