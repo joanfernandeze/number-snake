@@ -63,6 +63,13 @@ export const POWER_COLORS = [
 ];
 export const FALLBACK_COLOR = '#e5e7eb';
 
+// An obstacle is a piece of the wall: dark steel, hazard stripes, and the frame's red glow.
+export const OBSTACLE_COLORS = {
+  body: '#39405c',
+  stripe: '#facc15',
+  edge: 'rgba(239,68,68,0.95)',
+};
+
 export const STORAGE_KEY = 'numberSnake.best';
 
 export const INPUT = {

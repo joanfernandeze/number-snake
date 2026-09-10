@@ -47,6 +47,11 @@ export function addDeath(fx, cause, now) {
   fx.death = { type: cause.type, cell: { ...cause.cell }, born: now, life: DEATH.flashMs };
 }
 
+// A ring where an obstacle just landed: it appears mid-run, so it must announce itself.
+export function addObstacle(fx, cell, now) {
+  fx.rings.push({ x: cell.x, y: cell.y, born: now, life: FX.ringMs });
+}
+
 // Age 0..1 of an FX item at `now`, or null once expired.
 export function ageOf(item, now) {
   const a = (now - item.born) / item.life;

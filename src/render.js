@@ -1,4 +1,4 @@
-import { GRID, POWER_COLORS, FALLBACK_COLOR, FX, DEATH } from './constants.js';
+import { GRID, POWER_COLORS, FALLBACK_COLOR, FX, DEATH, OBSTACLE_COLORS } from './constants.js';
 import { ageOf } from './fx.js';
 import { nextDirection } from './snake.js';
 
@@ -187,6 +187,40 @@ function drawTiles(ctx, L, tiles) {
   }
 }
 
+// A chunk of the wall dropped into the board. Square corners where tiles and segments are
+// rounded, hazard stripes, and the frame's red glow: every signal says "not food".
+function drawObstacles(ctx, L, board) {
+  const cell = L.cell, pad = cell * 0.06, size = cell - pad * 2;
+  for (const o of board.obstacles) {
+    const px = L.ox + o.x * cell + pad, py = L.oy + o.y * cell + pad;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(px, py, size, size);
+    ctx.clip();
+    ctx.fillStyle = OBSTACLE_COLORS.body;
+    ctx.fillRect(px, py, size, size);
+    ctx.fillStyle = OBSTACLE_COLORS.stripe;
+    const w = size * 0.24;
+    for (let i = -2; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(px + i * w * 2, py);
+      ctx.lineTo(px + i * w * 2 + w, py);
+      ctx.lineTo(px + i * w * 2 + w + size, py + size);
+      ctx.lineTo(px + i * w * 2 + size, py + size);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.save();
+    ctx.strokeStyle = OBSTACLE_COLORS.edge;
+    ctx.lineWidth = Math.max(2, cell * 0.07);
+    ctx.shadowColor = OBSTACLE_COLORS.edge;
+    ctx.shadowBlur = cell * 0.35;
+    ctx.strokeRect(px, py, size, size);
+    ctx.restore();
+  }
+}
+
 // Grid cell every current segment came from, index-aligned to snake.cells.
 //   slide: the whole body advanced, so segment i held prevCells[i] one tick ago
 //   grow:  only the head came in; the body did not move, so it starts where it is
@@ -239,7 +273,7 @@ function drawDeath(ctx, L, fx, now) {
   const on = t >= d.life || Math.floor(t / (DEATH.flashPeriodMs / 2)) % 2 === 0;
   ctx.fillStyle = on ? 'rgba(239,68,68,0.9)' : 'rgba(239,68,68,0.25)';
   const c = d.cell;
-  if (d.type === 'self') {
+  if (d.type === 'self' || d.type === 'obstacle') {
     roundRect(ctx, L.ox + c.x * L.cell, L.oy + c.y * L.cell, L.cell, L.cell, L.cell * 0.22);
     ctx.fill();
     return;
@@ -329,6 +363,7 @@ export function draw(ctx, view, game, fx, now, motion) {
   drawBoard(ctx, L);
   drawWalls(ctx, L);
   drawTail(ctx, L, pos[pos.length - 1], game.snake); // under the tiles: a tile behind the tail covers the tip
+  drawObstacles(ctx, L, game.board);
   drawTiles(ctx, L, game.board.tiles);
   drawSnake(ctx, L, game.snake, pos);
   drawDeath(ctx, L, fx, now);

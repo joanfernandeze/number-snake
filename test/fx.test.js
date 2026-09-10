@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createFx, labelFor, addMerge, addShake, addDeath, ageOf, update } from '../src/fx.js';
+import { createFx, labelFor, addMerge, addShake, addDeath, addObstacle, ageOf, update } from '../src/fx.js';
 import { FX } from '../src/constants.js';
 
 const half = () => 0.5; // deterministic stand-in for Math.random
@@ -63,4 +63,15 @@ test('addDeath records the offending cell and survives update', () => {
   update(fx, 5000, 16);
   assert.deepEqual(fx.death.cell, { x: 3, y: -1 });
   assert.equal(fx.death.type, 'wall');
+});
+
+test('addObstacle rings the cell so a new obstacle cannot land unnoticed', () => {
+  const fx = createFx();
+  addObstacle(fx, { x: 4, y: 6 }, 1000);
+  assert.equal(fx.rings.length, 1);
+  assert.equal(fx.rings[0].x, 4);
+  assert.equal(fx.rings[0].y, 6);
+  assert.equal(ageOf(fx.rings[0], 1000), 0);
+  update(fx, 1000 + FX.ringMs + 1, 16);
+  assert.equal(fx.rings.length, 0, 'and it fades like any other ring');
 });
