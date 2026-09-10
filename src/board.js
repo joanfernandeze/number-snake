@@ -14,7 +14,7 @@ export function removeTile(board, x, y) {
 }
 
 // Pick a tile value: a power of two from base up to maxValue, weighted toward
-// the low end by SPAWN.decay so 2s/4s dominate but high matches still appear.
+// the low end by `decay` so 2s/4s dominate but high matches still appear.
 export function pickValue(rng, maxValue, decay = 0.45, base = SPAWN.baseValue) {
   const maxExp = Math.max(1, Math.round(Math.log2(maxValue / base)) + 1);
   const weights = [];

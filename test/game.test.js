@@ -12,8 +12,11 @@ test('targetInterval starts at the level opening speed and approaches its floor'
     const half = targetInterval(cfg.halfLifeEats, cfg);
     const gap = cfg.tickStartMs - cfg.tickFloorMs;
     assert.ok(Math.abs(half - (cfg.tickFloorMs + gap / 2)) < 1e-9, `${cfg.name} half life`);
-    assert.ok(targetInterval(10000, cfg) > cfg.tickFloorMs, 'the floor is an asymptote');
-    assert.ok(targetInterval(10000, cfg) < cfg.tickFloorMs + 1, 'and it gets there');
+    // Twelve half-lives is far past any real run (about 58 tiles) but still inside double
+    // precision, where 10000 tiles would round the whole term away and hide the asymptote.
+    const far = targetInterval(cfg.halfLifeEats * 12, cfg);
+    assert.ok(far > cfg.tickFloorMs, 'the floor is an asymptote, never actually reached');
+    assert.ok(far < cfg.tickFloorMs + 1, 'and the climb gets there for all practical purposes');
   }
 });
 
