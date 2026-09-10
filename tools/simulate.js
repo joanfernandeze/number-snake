@@ -2,6 +2,7 @@
 // reports stats, so we can sanity-check feel/tuning before a human playtest.
 //   node tools/simulate.js
 //   node tools/simulate.js --level=frenzy --runs=500
+//   node tools/simulate.js --runs=200 --noObstacles
 import { createRng } from '../src/rng.js';
 import { createGame, step, startRun, targetInterval } from '../src/game.js';
 import * as Snake from '../src/snake.js';
@@ -16,7 +17,7 @@ const args = Object.fromEntries(process.argv.slice(2).map(a => {
 // A tuning tool must refuse bad input loudly: a NaN knob still prints a
 // plausible-looking report, which is worse than no report.
 function fail(msg) {
-  console.error(`simulate: ${msg}\nusage: node tools/simulate.js [--level=chill|classic|frenzy] [--runs=500]`);
+  console.error(`simulate: ${msg}\nusage: node tools/simulate.js [--level=chill|classic|frenzy] [--runs=500] [--noObstacles]`);
   process.exit(1);
 }
 function positiveNumber(name, raw) {
@@ -29,12 +30,13 @@ function positiveInt(name, raw) {
   if (!Number.isInteger(n)) fail(`--${name} needs a whole number, got "${raw}"`);
   return n;
 }
-for (const k of Object.keys(args)) if (!['level', 'runs'].includes(k)) fail(`unknown option --${k}`);
+for (const k of Object.keys(args)) if (!['level', 'runs', 'noObstacles'].includes(k)) fail(`unknown option --${k}`);
 if ('level' in args && !(args.level in DIFFICULTIES)) {
   fail(`--level must be one of ${Object.keys(DIFFICULTIES).join(', ')}, got "${args.level}"`);
 }
 const RUNS = 'runs' in args ? positiveInt('runs', args.runs) : 300;
 const LEVELS = 'level' in args ? [args.level] : Object.keys(DIFFICULTIES);
+const NO_OBSTACLES = 'noObstacles' in args;
 
 const DIRS = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
 
@@ -43,6 +45,7 @@ function isSafe(g, d) {
   if (s.cells.length > 1 && d.x === -s.direction.x && d.y === -s.direction.y) return false;
   const cell = { x: h.x + d.x, y: h.y + d.y };
   if (Snake.isWall(cell, b.cols, b.rows)) return false;
+  if (Board.obstacleAt(b, cell.x, cell.y)) return false;   // a dropped block kills like a wall
   const willEat = !!Board.tileAt(b, cell.x, cell.y);
   return !Snake.hitsSelf(s, cell, willEat);
 }
@@ -92,6 +95,7 @@ function runOne(seed, policy, cfg, maxTicks = 5000) {
     maxTile: g.bestTile, score: g.score, ticks,
     len: g.snake.cells.length,
     eaten: g.eaten,
+    obstacles: g.board.obstacles.length,
     cause: g.lastCause ? g.lastCause.type : 'cap',
   };
 }
@@ -106,19 +110,22 @@ function summarize(label, policy, cfg) {
   const maxTiles = rows.map(r => r.maxTile).sort((a, b) => a - b);
   const eatenSorted = rows.map(r => r.eaten).sort((a, b) => a - b);
   const medianEaten = eatenSorted[Math.floor(RUNS / 2)];
+  const obstaclesSorted = rows.map(r => r.obstacles).sort((a, b) => a - b);
+  const medianObstacles = obstaclesSorted[Math.floor(RUNS / 2)];
   console.log(`\n=== ${label} (${RUNS} runs) ===`);
   console.log(`avg score      ${avg('score').toFixed(0)}`);
   console.log(`avg max tile   ${avg('maxTile').toFixed(0)}   (median ${maxTiles[Math.floor(RUNS / 2)]}, best ${maxTiles[maxTiles.length - 1]})`);
   console.log(`avg run ticks  ${avg('ticks').toFixed(0)}   avg length at death ${avg('len').toFixed(1)}`);
   console.log(`avg tiles eaten  ${avg('eaten').toFixed(1)}`);
+  console.log(`obstacles      ${medianObstacles} on the board at death (median)`);
   console.log(`finishing speed  ${targetInterval(medianEaten, cfg).toFixed(0)}ms per cell at the median run's tile count`);
   console.log(`reached >=32   ${pct(r => r.maxTile >= 32)}%   >=64 ${pct(r => r.maxTile >= 64)}%   >=128 ${pct(r => r.maxTile >= 128)}%   >=256 ${pct(r => r.maxTile >= 256)}%`);
   console.log(`death cause    ${JSON.stringify(causes)}`);
 }
 
-console.log(`Number Snake simulator — runs=${RUNS} level(s)=${LEVELS.join(', ')}`);
+console.log(`Number Snake simulator — runs=${RUNS} level(s)=${LEVELS.join(', ')}${NO_OBSTACLES ? ' (obstacles off)' : ''}`);
 for (const key of LEVELS) {
-  const cfg = DIFFICULTIES[key];
+  const cfg = NO_OBSTACLES ? { ...DIFFICULTIES[key], obstacleEvery: 0 } : DIFFICULTIES[key];
   console.log(`\n=== LEVEL ${cfg.name} — start ${cfg.tickStartMs}ms, floor ${cfg.tickFloorMs}ms, half-life ${cfg.halfLifeEats} tiles, ${cfg.maxTiles} tiles, window ${cfg.window} ===`);
   summarize('Random-safe policy (baseline / button-masher)', 'random', cfg);
   summarize('Greedy policy (plays for matches)', 'greedy', cfg);
