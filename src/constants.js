@@ -17,7 +17,7 @@ export const DIFFICULTIES = {
   chill: {
     key: 'chill', name: 'Chill',
     tickStartMs: 360, tickFloorMs: 180, halfLifeEats: 20,
-    maxTiles: 4, decay: 0.55, window: 'head', obstacleEvery: 15,
+    maxTiles: 4, decay: 0.55, window: 'head', obstacleEvery: 20,
   },
   classic: {
     key: 'classic', name: 'Classic',
@@ -27,7 +27,7 @@ export const DIFFICULTIES = {
   frenzy: {
     key: 'frenzy', name: 'Frenzy',
     tickStartMs: 240, tickFloorMs: 90, halfLifeEats: 10,
-    maxTiles: 2, decay: 0.35, window: 'max', obstacleEvery: 7,
+    maxTiles: 2, decay: 0.35, window: 'max', obstacleEvery: 10,
   },
 };
 

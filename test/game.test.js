@@ -227,8 +227,14 @@ test('running into an obstacle ends the run and names the cell', () => {
   assert.deepEqual(g.lastCause.cell, { x: 3, y: 4 });
 });
 
-test('every level says how often it drops an obstacle, gentlest first', () => {
+test('every level drops obstacles, and Chill fills its board the most slowly', () => {
   const { chill, classic, frenzy } = DIFFICULTIES;
+  for (const cfg of [chill, classic, frenzy]) {
+    assert.ok(Number.isInteger(cfg.obstacleEvery) && cfg.obstacleEvery > 0, `${cfg.name} needs a cadence`);
+  }
   assert.ok(chill.obstacleEvery > classic.obstacleEvery, 'Chill fills the board more slowly');
-  assert.ok(classic.obstacleEvery > frenzy.obstacleEvery, 'Frenzy fills it fastest');
+  // Frenzy keeps Classic's cadence on purpose: measured at every 7 the obstacles flattened
+  // its climb from a median tile of 64 to 32, and a hard level should make the player fail,
+  // not deny them the climb. Its difficulty comes from speed and from having two tiles.
+  assert.equal(frenzy.obstacleEvery, classic.obstacleEvery);
 });
