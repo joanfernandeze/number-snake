@@ -19,6 +19,12 @@
         <p>Tile <strong id="ovTile">0</strong> · Score <strong id="ovScore">0</strong> · Combo <strong id="ovCombo">0</strong></p>
         <p class="best">Best tile <strong id="ovBestTile">0</strong> · Best score <strong id="ovBestScore">0</strong></p>
         <button id="playAgain">Play Again</button>
+        <p class="levelHint">Pick a level to play it now</p>
+        <div id="levels" role="group" aria-label="Difficulty">
+          <button type="button" data-level="chill">Chill</button>
+          <button type="button" data-level="classic">Classic</button>
+          <button type="button" data-level="frenzy">Frenzy</button>
+        </div>
         <button id="statsToggle" class="link" type="button">Stats</button>
         <div id="stats" class="hidden">
           <pre id="statsText"></pre>
@@ -28,11 +34,6 @@
       </div>
     </div>
     <p id="hint">Swipe or use arrow keys. Eat matching numbers to merge up. Don't hit yourself.</p>
-    <div id="levels" role="group" aria-label="Difficulty">
-      <button type="button" data-level="chill">Chill</button>
-      <button type="button" data-level="classic">Classic</button>
-      <button type="button" data-level="frenzy">Frenzy</button>
-    </div>
   </div>
   <script type="module" src="src/main.js"></script>
 </body>

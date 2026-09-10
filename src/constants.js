@@ -40,7 +40,6 @@ export const OBSTACLE = {
 };
 
 export const DEFAULT_DIFFICULTY = 'classic';
-export const DIFFICULTY_KEY = 'numberSnake.difficulty';
 
 export const START = {
   snakeLength: 1,

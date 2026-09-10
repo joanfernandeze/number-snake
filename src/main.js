@@ -4,7 +4,7 @@ import * as Render from './render.js';
 import * as Snake from './snake.js';
 import * as Fx from './fx.js';
 import { initInput } from './input.js';
-import { GRID, STORAGE_KEY, DEATH, UI, DIFFICULTIES, DEFAULT_DIFFICULTY, DIFFICULTY_KEY } from './constants.js';
+import { GRID, STORAGE_KEY, DEATH, UI, DIFFICULTIES, DEFAULT_DIFFICULTY } from './constants.js';
 import { loadRuns, saveRuns, buildRun, summarize, formatStats } from './telemetry.js';
 
 const canvas = document.getElementById('game');
@@ -26,10 +26,7 @@ function saveBest(b) {
 function fitCanvas() {
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
   const app = $('app');
-  // Everything stacked around the canvas: three children plus #app's three 12px gaps and
-  // its 12px padding top and bottom. Miss one and the level buttons fall off the screen.
-  const chrome = $('hud').offsetHeight + $('hint').offsetHeight + $('levels').offsetHeight;
-  const used = chrome + 12 * 3 + 12 * 2;
+  const used = $('hud').offsetHeight + $('hint').offsetHeight + 48; // 2 gaps + 2 paddings of 12px
   const availW = Math.max(120, Math.min(420, app.clientWidth - 24));
   const availH = Math.max(120, app.clientHeight - used);
   const ratio = GRID.cols / GRID.rows;
@@ -44,22 +41,14 @@ function fitCanvas() {
 
 let best = loadBest();
 
-function loadDifficulty() {
-  try {
-    const k = localStorage.getItem(DIFFICULTY_KEY);
-    if (k && DIFFICULTIES[k]) return k;
-  } catch { /* ignore */ }
-  return DEFAULT_DIFFICULTY;
-}
-let difficulty = loadDifficulty();
+// Every page load starts on Classic, so a tester's first run is always the same game. A level
+// picked on the game-over panel sticks for the rest of the session.
+let difficulty = DEFAULT_DIFFICULTY;
 
-// The row is dimmed while a run is in progress: picking a level restarts, and losing a run
-// to a stray tap on the buttons under the board would be infuriating.
 function paintLevels() {
   for (const b of $('levels').querySelectorAll('button')) {
     b.setAttribute('aria-pressed', String(b.dataset.level === difficulty));
   }
-  $('levels').classList.toggle('busy', !!(game && game.started && !game.over));
 }
 let game, fx, lastTick, motion, prevNow, interval;
 
@@ -133,7 +122,6 @@ function frame(now) {
         if (run.firstMergeMs === null) run.firstMergeMs = Math.round(now - run.t0);
       }
     }
-    if (game.ticks <= 1 || ev.over) paintLevels();
   }
   // The slide lasts as long as the interval that will fire the next tick. That interval
   // eases rather than jumps, so the slide it paces cannot lurch either.
@@ -174,11 +162,11 @@ $('statsCopy').addEventListener('click', async () => {
 });
 window.addEventListener('resize', fitCanvas);
 window.addEventListener('orientationchange', fitCanvas);
+// Tapping a level starts a run on it straight away: the panel is already the "play again" moment.
 $('levels').addEventListener('click', (e) => {
   const key = e.target && e.target.dataset && e.target.dataset.level;
   if (!key || !DIFFICULTIES[key]) return;
   difficulty = key;
-  try { localStorage.setItem(DIFFICULTY_KEY, key); } catch { /* ignore */ }
   start();
 });
 
