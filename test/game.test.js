@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
 import { createGame, step, startRun, targetInterval, smoothInterval, tickDue, nextTickTime } from '../src/game.js';
-import { SPAWN, TIMING, START, DIFFICULTIES, DEFAULT_DIFFICULTY } from '../src/constants.js';
+import { SPAWN, TIMING, START, DIFFICULTIES, DEFAULT_DIFFICULTY, OBSTACLE } from '../src/constants.js';
 
 const UP = { x: 0, y: -1 }, DOWN = { x: 0, y: 1 };
 
@@ -175,4 +175,60 @@ test("Chill's head window keeps every spawned tile reachable from the head", () 
   step(g); // eat 2 onto 2 -> head 4, body 64
   assert.deepEqual(g.snake.values, [4, 64]);
   assert.ok(g.board.tiles.every(t => t.value <= 4), `tiles ${JSON.stringify(g.board.tiles)}`);
+});
+
+test('an obstacle arrives every cfg.obstacleEvery tiles eaten', () => {
+  const cfg = { ...DIFFICULTIES.classic, obstacleEvery: 2 };
+  const g = createGame(createRng(9), cfg);
+  startRun(g);
+  const eat = () => {
+    g.snake.cells = [{ x: 3, y: 9 }];
+    g.snake.values = [2];
+    g.snake.direction = { ...UP }; g.snake.queue = [];
+    g.board.tiles = [{ x: 3, y: 8, value: 2 }];
+    return step(g);
+  };
+  const first = eat();
+  assert.equal(g.eaten, 1);
+  assert.equal(first.obstacle, null, 'not yet');
+  assert.equal(g.board.obstacles.length, 0);
+  const second = eat();
+  assert.equal(g.eaten, 2);
+  assert.ok(second.obstacle, 'the second tile brings one');
+  assert.equal(g.board.obstacles.length, 1);
+});
+
+test('obstacles stop arriving once the board has its fill', () => {
+  const cfg = { ...DIFFICULTIES.classic, obstacleEvery: 1 };
+  const g = createGame(createRng(11), cfg);
+  startRun(g);
+  for (let i = 0; i < OBSTACLE.max + 5; i++) {
+    g.snake.cells = [{ x: 3, y: 9 }];
+    g.snake.values = [2];
+    g.snake.direction = { ...UP }; g.snake.queue = [];
+    g.board.tiles = [{ x: 3, y: 8, value: 2 }];
+    step(g);
+  }
+  assert.equal(g.board.obstacles.length, OBSTACLE.max);
+});
+
+test('running into an obstacle ends the run and names the cell', () => {
+  const g = createGame(createRng(1));
+  startRun(g);
+  g.snake.cells = [{ x: 3, y: 5 }];
+  g.snake.values = [2];
+  g.snake.direction = { ...UP }; g.snake.queue = [];
+  g.board.tiles = [];
+  g.board.obstacles = [{ x: 3, y: 4 }];
+  const ev = step(g);
+  assert.equal(ev.over, true);
+  assert.equal(g.over, true);
+  assert.equal(g.lastCause.type, 'obstacle');
+  assert.deepEqual(g.lastCause.cell, { x: 3, y: 4 });
+});
+
+test('every level says how often it drops an obstacle, gentlest first', () => {
+  const { chill, classic, frenzy } = DIFFICULTIES;
+  assert.ok(chill.obstacleEvery > classic.obstacleEvery, 'Chill fills the board more slowly');
+  assert.ok(classic.obstacleEvery > frenzy.obstacleEvery, 'Frenzy fills it fastest');
 });

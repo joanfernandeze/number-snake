@@ -1,4 +1,4 @@
-import { GRID, TIMING, START, DIFFICULTIES, DEFAULT_DIFFICULTY } from './constants.js';
+import { GRID, TIMING, START, DIFFICULTIES, DEFAULT_DIFFICULTY, OBSTACLE } from './constants.js';
 import * as Snake from './snake.js';
 import * as Board from './board.js';
 
@@ -85,6 +85,12 @@ export function step(game) {
     return { over: true, cause: game.lastCause };
   }
 
+  if (Board.obstacleAt(b, next.x, next.y)) {
+    game.over = true;
+    game.lastCause = { type: 'obstacle', cell: next };
+    return { over: true, cause: game.lastCause };
+  }
+
   const tile = Board.tileAt(b, next.x, next.y);
   const willEat = !!tile;
 
@@ -102,10 +108,17 @@ export function step(game) {
     if (r.merges > game.bestCombo) game.bestCombo = r.merges;
     const mv = Snake.maxValue(s);
     if (mv > game.bestTile) game.bestTile = mv;
+    // One obstacle every cfg.obstacleEvery tiles, up to the cap. It goes down before the
+    // tiles refill so it has the whole free board to choose from.
+    let obstacle = null;
+    if (game.cfg.obstacleEvery > 0 && game.eaten % game.cfg.obstacleEvery === 0
+        && b.obstacles.length < OBSTACLE.max) {
+      obstacle = Board.spawnObstacle(b, game.rng, s.cells, s.cells[0]);
+    }
     Board.refill(b, game.rng, spawnRef(game), s.cells, game.cfg.maxTiles, game.cfg.decay);
-    return { over: false, ate: true, merges: r.merges, gained: r.gained, cell: next };
+    return { over: false, ate: true, merges: r.merges, gained: r.gained, cell: next, obstacle };
   }
 
   Snake.move(s);
-  return { over: false, ate: false, merges: 0, gained: 0, cell: next };
+  return { over: false, ate: false, merges: 0, gained: 0, cell: next, obstacle: null };
 }

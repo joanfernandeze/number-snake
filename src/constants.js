@@ -17,18 +17,26 @@ export const DIFFICULTIES = {
   chill: {
     key: 'chill', name: 'Chill',
     tickStartMs: 360, tickFloorMs: 180, halfLifeEats: 20,
-    maxTiles: 4, decay: 0.55, window: 'head',
+    maxTiles: 4, decay: 0.55, window: 'head', obstacleEvery: 15,
   },
   classic: {
     key: 'classic', name: 'Classic',
     tickStartMs: 300, tickFloorMs: 120, halfLifeEats: 14,
-    maxTiles: 3, decay: 0.45, window: 'max',
+    maxTiles: 3, decay: 0.45, window: 'max', obstacleEvery: 10,
   },
   frenzy: {
     key: 'frenzy', name: 'Frenzy',
     tickStartMs: 240, tickFloorMs: 90, halfLifeEats: 10,
-    maxTiles: 2, decay: 0.35, window: 'max',
+    maxTiles: 2, decay: 0.35, window: 'max', obstacleEvery: 7,
   },
+};
+
+// Obstacles are permanent, so a long run slowly runs out of room. They keep clear of the
+// head when they land and avoid lining up beside each other, and they stop at a cap so the
+// board never becomes unplayable.
+export const OBSTACLE = {
+  max: 8,           // most obstacles a board will ever hold
+  minHeadDist: 4,   // Manhattan cells of clearance from the head when one lands
 };
 
 export const DEFAULT_DIFFICULTY = 'classic';

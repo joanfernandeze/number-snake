@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
 import {
-  createBoard, tileAt, removeTile, pickValue, spawnTile, refill,
+  createBoard, tileAt, removeTile, pickValue, spawnTile, refill, spawnObstacle, obstacleAt,
 } from '../src/board.js';
 
 test('createBoard has the given size and no tiles', () => {
@@ -73,4 +73,62 @@ test('refill and spawnTile take their tile count and bias from the caller', () =
   refill(flat, createRng(7), 64, [], 40, 0.8);
   const big = (b) => b.tiles.filter(t => t.value >= 16).length;
   assert.ok(big(flat) > big(steep), `a flatter decay spawns more high tiles: ${big(flat)} vs ${big(steep)}`);
+});
+
+test('a new board has no obstacles and reports none anywhere', () => {
+  const board = createBoard();
+  assert.deepEqual(board.obstacles, []);
+  assert.equal(obstacleAt(board, 3, 5), null);
+});
+
+test('spawnObstacle keeps its distance from the head', () => {
+  const head = { x: 3, y: 5 };
+  for (let i = 0; i < 60; i++) {
+    const board = createBoard();
+    const o = spawnObstacle(board, createRng(100 + i), [head], head, 4);
+    assert.ok(o, 'somewhere always qualifies on an empty board');
+    assert.ok(Math.abs(o.x - head.x) + Math.abs(o.y - head.y) >= 4, `too close: ${JSON.stringify(o)}`);
+  }
+});
+
+test('spawnObstacle never lands on the snake, a tile or another obstacle', () => {
+  const head = { x: 0, y: 0 };
+  const board = createBoard();
+  board.tiles = [{ x: 6, y: 10, value: 2 }];
+  const snake = [head, { x: 0, y: 1 }, { x: 0, y: 2 }];
+  for (let i = 0; i < 30; i++) {
+    const o = spawnObstacle(board, createRng(200 + i), snake, head, 3);
+    if (!o) continue;
+    assert.ok(!board.tiles.some(t => t.x === o.x && t.y === o.y), 'not on a tile');
+    assert.ok(!snake.some(c => c.x === o.x && c.y === o.y), 'not on the snake');
+    assert.equal(board.obstacles.filter(q => q.x === o.x && q.y === o.y).length, 1, 'not stacked');
+  }
+});
+
+test('spawnObstacle avoids sitting beside another obstacle while it can', () => {
+  const head = { x: 0, y: 0 };
+  const board = createBoard();
+  board.obstacles = [{ x: 3, y: 5 }];
+  const touching = (o) => Math.abs(o.x - 3) + Math.abs(o.y - 5) === 1;
+  let neighbours = 0;
+  for (let i = 0; i < 60; i++) {
+    board.obstacles = [{ x: 3, y: 5 }];
+    const o = spawnObstacle(board, createRng(300 + i), [head], head, 3);
+    if (o && touching(o)) neighbours++;
+  }
+  assert.equal(neighbours, 0, 'an empty board always has somewhere better to go');
+});
+
+test('spawnObstacle returns null when nowhere at all qualifies', () => {
+  const board = createBoard(2, 1);
+  const snake = [{ x: 0, y: 0 }, { x: 1, y: 0 }];
+  assert.equal(spawnObstacle(board, createRng(1), snake, snake[0], 1), null);
+});
+
+test('tiles never spawn on an obstacle', () => {
+  const board = createBoard(3, 1);
+  board.obstacles = [{ x: 1, y: 0 }];
+  refill(board, createRng(5), 4, [], 5, 0.45);
+  assert.ok(board.tiles.every(t => !(t.x === 1 && t.y === 0)), JSON.stringify(board.tiles));
+  assert.equal(board.tiles.length, 2, 'only the two free cells get tiles');
 });
