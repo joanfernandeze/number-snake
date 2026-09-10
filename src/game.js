@@ -1,16 +1,14 @@
-import { GRID, TIMING, START, SPAWN } from './constants.js';
+import { GRID, TIMING, START, DIFFICULTIES, DEFAULT_DIFFICULTY } from './constants.js';
 import * as Snake from './snake.js';
 import * as Board from './board.js';
 
-// The interval the run is climbing toward at this score. The gap to the floor halves
-// every TIMING.halfLifeScore points, so each point shaves less off than the one before:
-// a 200-point cascade late in a run barely moves the speed, where the old linear ramp
-// lurched by the same amount whenever it was paid. It approaches the floor without ever
+// The interval the run is climbing toward after eating this many tiles. The gap to the
+// floor halves every cfg.halfLifeEats tiles, so the climb is spread evenly across a run
+// instead of arriving with the late, lumpy points. It approaches the floor without ever
 // reaching it, so there is no wall where the climb suddenly stops.
-export function targetInterval(score) {
-  const { tickStartMs, tickFloorMs, halfLifeScore } = TIMING;
-  const gap = tickStartMs - tickFloorMs;
-  return tickFloorMs + gap * Math.pow(2, -Math.max(0, score) / halfLifeScore);
+export function targetInterval(eaten, cfg = DIFFICULTIES[DEFAULT_DIFFICULTY]) {
+  const gap = cfg.tickStartMs - cfg.tickFloorMs;
+  return cfg.tickFloorMs + gap * Math.pow(2, -Math.max(0, eaten) / cfg.halfLifeEats);
 }
 
 // Ease the live interval toward that target rather than snapping to it. Score arrives in
@@ -41,27 +39,30 @@ export function nextTickTime(lastTick, interval, now) {
   return now - next > interval ? now : next;
 }
 
-// Upper bound of the tile-value window (spec §5). 'max' keeps every value the
-// player has ever built reachable; 'head' tracks what the head can use right now.
-function spawnRef(snake) {
-  return SPAWN.window === 'head' ? snake.values[0] : Snake.maxValue(snake);
+// Upper bound of the tile-value window (spec §5). 'max' keeps every value the player has
+// ever built reachable; 'head' tracks what the head can use right now, so the climb cannot
+// stall — that is what makes Chill gentle.
+function spawnRef(game) {
+  return game.cfg.window === 'head' ? game.snake.values[0] : Snake.maxValue(game.snake);
 }
 
-export function createGame(rng) {
+export function createGame(rng, cfg = DIFFICULTIES[DEFAULT_DIFFICULTY]) {
   const board = Board.createBoard();
   const start = { x: Math.floor(GRID.cols / 2), y: Math.floor(GRID.rows / 2) };
   const snake = Snake.createSnake(START.snakeLength, START.snakeValue, start, START.direction);
-  Board.refill(board, rng, spawnRef(snake), snake.cells);
-  return {
-    rng, board, snake,
+  const game = {
+    rng, board, snake, cfg,
     started: false,   // the run does not move until the player's first input
     ticks: 0,         // ticks stepped since the run started
+    eaten: 0,         // tiles eaten: the clock the speed ramp runs on
     score: 0,
     bestTile: Snake.maxValue(snake),
     bestCombo: 0,
     over: false,
     lastCause: null,
   };
+  Board.refill(board, rng, spawnRef(game), snake.cells, cfg.maxTiles, cfg.decay);
+  return game;
 }
 
 // Called on the player's first direction input; until then step() waits.
@@ -95,12 +96,13 @@ export function step(game) {
 
   if (willEat) {
     const r = Snake.eat(s, next, tile.value);
+    game.eaten += 1;
     Board.removeTile(b, next.x, next.y);
     game.score += r.gained;
     if (r.merges > game.bestCombo) game.bestCombo = r.merges;
     const mv = Snake.maxValue(s);
     if (mv > game.bestTile) game.bestTile = mv;
-    Board.refill(b, game.rng, spawnRef(s), s.cells);
+    Board.refill(b, game.rng, spawnRef(game), s.cells, game.cfg.maxTiles, game.cfg.decay);
     return { over: false, ate: true, merges: r.merges, gained: r.gained, cell: next };
   }
 

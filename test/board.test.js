@@ -63,3 +63,14 @@ test('refill tops the board up to maxTiles', () => {
   refill(b, r, 2, [{ x: 3, y: 5 }], 3);
   assert.equal(b.tiles.length, 3);
 });
+
+test('refill and spawnTile take their tile count and bias from the caller', () => {
+  const board = createBoard();
+  refill(board, createRng(2), 8, [], 5);
+  assert.equal(board.tiles.length, 5, 'the caller decides how many tiles');
+  const steep = createBoard(), flat = createBoard();
+  refill(steep, createRng(7), 64, [], 40, 0.2);
+  refill(flat, createRng(7), 64, [], 40, 0.8);
+  const big = (b) => b.tiles.filter(t => t.value >= 16).length;
+  assert.ok(big(flat) > big(steep), `a flatter decay spawns more high tiles: ${big(flat)} vs ${big(steep)}`);
+});

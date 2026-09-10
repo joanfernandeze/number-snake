@@ -15,7 +15,7 @@ export function removeTile(board, x, y) {
 
 // Pick a tile value: a power of two from base up to maxValue, weighted toward
 // the low end by SPAWN.decay so 2s/4s dominate but high matches still appear.
-export function pickValue(rng, maxValue, decay = SPAWN.decay, base = SPAWN.baseValue) {
+export function pickValue(rng, maxValue, decay = 0.45, base = SPAWN.baseValue) {
   const maxExp = Math.max(1, Math.round(Math.log2(maxValue / base)) + 1);
   const weights = [];
   let total = 0;
@@ -37,8 +37,8 @@ function isOccupied(board, snakeCells, x, y) {
   return snakeCells.some(c => c.x === x && c.y === y);
 }
 
-// Spawn one tile on a random empty cell. Returns the tile, or null if board is full.
-export function spawnTile(board, rng, maxValue, snakeCells) {
+// Spawn one tile on a random empty cell. Returns the tile, or null if the board is full.
+export function spawnTile(board, rng, maxValue, snakeCells, decay) {
   const empties = [];
   for (let y = 0; y < board.rows; y++) {
     for (let x = 0; x < board.cols; x++) {
@@ -47,13 +47,14 @@ export function spawnTile(board, rng, maxValue, snakeCells) {
   }
   if (empties.length === 0) return null;
   const cell = empties[randInt(rng, empties.length)];
-  const tile = { x: cell.x, y: cell.y, value: pickValue(rng, maxValue) };
+  const tile = { x: cell.x, y: cell.y, value: pickValue(rng, maxValue, decay) };
   board.tiles.push(tile);
   return tile;
 }
 
-export function refill(board, rng, maxValue, snakeCells, maxTiles = SPAWN.maxTiles) {
+// The tile count and the low-value bias both come from the level, so the caller passes them.
+export function refill(board, rng, maxValue, snakeCells, maxTiles, decay) {
   while (board.tiles.length < maxTiles) {
-    if (!spawnTile(board, rng, maxValue, snakeCells)) break;
+    if (!spawnTile(board, rng, maxValue, snakeCells, decay)) break;
   }
 }

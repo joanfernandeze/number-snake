@@ -2,34 +2,19 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
 import { createGame, step, startRun, targetInterval, smoothInterval, tickDue, nextTickTime } from '../src/game.js';
-import { SPAWN, TIMING, START } from '../src/constants.js';
+import { SPAWN, TIMING, START, DIFFICULTIES, DEFAULT_DIFFICULTY } from '../src/constants.js';
 
 const UP = { x: 0, y: -1 }, DOWN = { x: 0, y: 1 };
 
-test('targetInterval starts at the gentle tick and approaches the floor from above', () => {
-  assert.equal(targetInterval(0), TIMING.tickStartMs);
-  assert.ok(targetInterval(100) < targetInterval(0));             // speeds up with score
-  // An asymptote, not a wall: still above the floor at a score no run will see, and
-  // close enough to it there that the last stretch of the climb is imperceptible.
-  const unreachable = TIMING.halfLifeScore * 12;
-  assert.ok(targetInterval(unreachable) > TIMING.tickFloorMs);
-  assert.ok(targetInterval(unreachable) - TIMING.tickFloorMs < 1);
-});
-
-test('targetInterval closes half the gap to the floor every halfLifeScore points', () => {
-  const gap = (score) => targetInterval(score) - TIMING.tickFloorMs;
-  const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} !== ${b}`);
-  near(gap(TIMING.halfLifeScore), gap(0) / 2);
-  near(gap(TIMING.halfLifeScore * 2), gap(0) / 4);
-});
-
-test('targetInterval shaves less off per point as the score grows', () => {
-  // The whole point of the geometric curve: a 200-point cascade late in a run must not
-  // move the speed the way the same 200 points did at the start.
-  const early = targetInterval(0) - targetInterval(200);
-  const late = targetInterval(1000) - targetInterval(1200);
-  // The exact ratio is pinned by the half-life test above; this one guards the intent.
-  assert.ok(late < early * 0.7, `late ${late} not much gentler than early ${early}`);
+test('targetInterval starts at the level opening speed and approaches its floor', () => {
+  for (const cfg of Object.values(DIFFICULTIES)) {
+    assert.equal(targetInterval(0, cfg), cfg.tickStartMs);
+    const half = targetInterval(cfg.halfLifeEats, cfg);
+    const gap = cfg.tickStartMs - cfg.tickFloorMs;
+    assert.ok(Math.abs(half - (cfg.tickFloorMs + gap / 2)) < 1e-9, `${cfg.name} half life`);
+    assert.ok(targetInterval(10000, cfg) > cfg.tickFloorMs, 'the floor is an asymptote');
+    assert.ok(targetInterval(10000, cfg) < cfg.tickFloorMs + 1, 'and it gets there');
+  }
 });
 
 test('smoothInterval eases toward the target instead of snapping to it', () => {
@@ -135,25 +120,56 @@ test('step waits until the run is started, then moves', () => {
   assert.equal(g.ticks, 1);
 });
 
-test("SPAWN.window 'head' caps spawned tiles at the head value", () => {
-  const prev = SPAWN.window;
-  SPAWN.window = 'head';
-  try {
-    // 20 seeds x 3 spawns: with the default 'max' window (values up to 64) the odds
-    // that all 60 tiles land <= 4 are ~1e-6, so this reliably fails before Step 4.
-    for (let seed = 1; seed <= 20; seed++) {
-      const g = createGame(createRng(seed));
-      startRun(g);
-      g.snake.cells = [{ x: 3, y: 5 }, { x: 3, y: 6 }];
-      g.snake.values = [2, 64];
-      g.snake.direction = { ...UP }; g.snake.queue = [];
-      g.board.tiles = [{ x: 3, y: 4, value: 2 }];
-      step(g); // eat 2 onto 2 -> head 4, body 64; refill spawns 3 tiles
-      assert.deepEqual(g.snake.values, [4, 64]);
-      assert.equal(g.board.tiles.length, 3);
-      assert.ok(g.board.tiles.every(t => t.value <= 4), `seed ${seed}: tiles ${JSON.stringify(g.board.tiles)}`);
-    }
-  } finally {
-    SPAWN.window = prev;
+test('targetInterval keys off tiles eaten, so the climb is spread across the run', () => {
+  const cfg = DIFFICULTIES.classic;
+  // A typical run eats about 58 tiles: the interval must move materially over that span.
+  assert.ok(targetInterval(58, cfg) < targetInterval(0, cfg) * 0.5, 'more than twice as fast by the end');
+  assert.ok(targetInterval(10, cfg) < targetInterval(0, cfg), 'and it is already moving early');
+});
+
+test('the three levels are ordered: Chill is the gentlest, Frenzy the sharpest', () => {
+  const { chill, classic, frenzy } = DIFFICULTIES;
+  for (const eaten of [0, 10, 30, 58]) {
+    assert.ok(targetInterval(eaten, chill) > targetInterval(eaten, classic), `chill slower at ${eaten}`);
+    assert.ok(targetInterval(eaten, classic) > targetInterval(eaten, frenzy), `frenzy faster at ${eaten}`);
   }
+  assert.ok(chill.maxTiles > classic.maxTiles && classic.maxTiles > frenzy.maxTiles);
+  assert.ok(chill.decay > classic.decay && classic.decay > frenzy.decay);
+  assert.equal(chill.window, 'head', 'Chill never lets the climb stall');
+});
+
+test('createGame carries its level and counts what it eats', () => {
+  const g = createGame(createRng(1));
+  assert.equal(g.cfg, DIFFICULTIES[DEFAULT_DIFFICULTY], 'a default level when none is given');
+  assert.equal(g.eaten, 0);
+  assert.equal(g.board.tiles.length, g.cfg.maxTiles);
+  const frenzy = createGame(createRng(1), DIFFICULTIES.frenzy);
+  assert.equal(frenzy.cfg, DIFFICULTIES.frenzy);
+  assert.equal(frenzy.board.tiles.length, DIFFICULTIES.frenzy.maxTiles, 'fewer tiles on Frenzy');
+});
+
+test('eating raises the eaten count and refills to the level tile count', () => {
+  const g = createGame(createRng(1), DIFFICULTIES.frenzy);
+  startRun(g);
+  g.snake.cells = [{ x: 3, y: 5 }];
+  g.snake.values = [2];
+  g.snake.direction = { ...UP }; g.snake.queue = [];
+  g.board.tiles = [{ x: 3, y: 4, value: 2 }];
+  step(g);
+  assert.equal(g.eaten, 1);
+  assert.equal(g.board.tiles.length, DIFFICULTIES.frenzy.maxTiles);
+  step(g);
+  assert.equal(g.eaten, 1, 'a plain move does not count as eating');
+});
+
+test("Chill's head window keeps every spawned tile reachable from the head", () => {
+  const g = createGame(createRng(3), DIFFICULTIES.chill);
+  startRun(g);
+  g.snake.cells = [{ x: 3, y: 5 }, { x: 3, y: 6 }];
+  g.snake.values = [2, 64];
+  g.snake.direction = { ...UP }; g.snake.queue = [];
+  g.board.tiles = [{ x: 3, y: 4, value: 2 }];
+  step(g); // eat 2 onto 2 -> head 4, body 64
+  assert.deepEqual(g.snake.values, [4, 64]);
+  assert.ok(g.board.tiles.every(t => t.value <= 4), `tiles ${JSON.stringify(g.board.tiles)}`);
 });

@@ -1,19 +1,38 @@
 export const GRID = { cols: 7, rows: 11 };
 
+// What every level shares. Anything that differs between levels lives in DIFFICULTIES.
 export const TIMING = {
-  tickStartMs: 355,     // tick interval at score 0
-  tickFloorMs: 119,     // the interval the climb approaches; an asymptote, never reached
-  halfLifeScore: 300,   // points that close half the remaining gap to the floor
   smoothTauMs: 1200,    // a change in target speed eases in over roughly this long
   turnEarlyFrac: 0.55,  // a queued turn may fire its tick once this much of the slide has played
 };
 
 export const SPAWN = {
-  maxTiles: 3,        // tiles kept on the board at once
-  decay: 0.45,        // geometric weight per value step (lower value = far more common)
   baseValue: 2,       // smallest tile value
-  window: 'max',      // 'max' = up to the snake's largest segment (spec §5); 'head' = up to the head value (playtest knob)
 };
+
+// Speed is keyed to tiles eaten, not to score: eating grows steadily with time played,
+// while score arrives late and in lumps, so a score-keyed ramp put the whole climb after
+// the run was effectively over. A typical run eats about 58 tiles.
+export const DIFFICULTIES = {
+  chill: {
+    key: 'chill', name: 'Chill',
+    tickStartMs: 360, tickFloorMs: 180, halfLifeEats: 20,
+    maxTiles: 4, decay: 0.55, window: 'head',
+  },
+  classic: {
+    key: 'classic', name: 'Classic',
+    tickStartMs: 300, tickFloorMs: 120, halfLifeEats: 14,
+    maxTiles: 3, decay: 0.45, window: 'max',
+  },
+  frenzy: {
+    key: 'frenzy', name: 'Frenzy',
+    tickStartMs: 240, tickFloorMs: 90, halfLifeEats: 10,
+    maxTiles: 2, decay: 0.35, window: 'max',
+  },
+};
+
+export const DEFAULT_DIFFICULTY = 'classic';
+export const DIFFICULTY_KEY = 'numberSnake.difficulty';
 
 export const START = {
   snakeLength: 1,
