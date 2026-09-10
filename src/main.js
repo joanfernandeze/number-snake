@@ -26,7 +26,10 @@ function saveBest(b) {
 function fitCanvas() {
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
   const app = $('app');
-  const used = $('hud').offsetHeight + $('hint').offsetHeight + 48; // 2 gaps + 2 paddings of 12px
+  // Everything stacked around the canvas: three children plus #app's three 12px gaps and
+  // its 12px padding top and bottom. Miss one and the level buttons fall off the screen.
+  const chrome = $('hud').offsetHeight + $('hint').offsetHeight + $('levels').offsetHeight;
+  const used = chrome + 12 * 3 + 12 * 2;
   const availW = Math.max(120, Math.min(420, app.clientWidth - 24));
   const availH = Math.max(120, app.clientHeight - used);
   const ratio = GRID.cols / GRID.rows;
