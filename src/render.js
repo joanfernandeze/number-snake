@@ -188,37 +188,67 @@ function drawTiles(ctx, L, tiles) {
 }
 
 // A chunk of the wall dropped into the board. Square corners where tiles and segments are
-// rounded, hazard stripes, and the frame's red glow: every signal says "not food".
-function drawObstacles(ctx, L, board) {
+// rounded, hazard stripes, and the frame's red glow: every signal says "not food". An
+// obstacle that has not armed yet is hollow and pulsing — it is arriving, not yet lethal.
+function drawObstacles(ctx, L, board, now) {
   const cell = L.cell, pad = cell * 0.06, size = cell - pad * 2;
   for (const o of board.obstacles) {
+    const armed = o.armed !== false; // a hand-made obstacle with no flag is already solid
     const px = L.ox + o.x * cell + pad, py = L.oy + o.y * cell + pad;
     ctx.save();
-    ctx.beginPath();
-    ctx.rect(px, py, size, size);
-    ctx.clip();
-    ctx.fillStyle = OBSTACLE_COLORS.body;
-    ctx.fillRect(px, py, size, size);
-    ctx.fillStyle = OBSTACLE_COLORS.stripe;
-    const w = size * 0.24;
-    for (let i = -2; i < 4; i++) {
+    if (!armed) ctx.globalAlpha = 0.30 + 0.40 * Math.abs(Math.sin(now / 150));
+    if (armed) {
       ctx.beginPath();
-      ctx.moveTo(px + i * w * 2, py);
-      ctx.lineTo(px + i * w * 2 + w, py);
-      ctx.lineTo(px + i * w * 2 + w + size, py + size);
-      ctx.lineTo(px + i * w * 2 + size, py + size);
-      ctx.closePath();
-      ctx.fill();
+      ctx.rect(px, py, size, size);
+      ctx.clip();
+      ctx.fillStyle = OBSTACLE_COLORS.body;
+      ctx.fillRect(px, py, size, size);
+      ctx.fillStyle = OBSTACLE_COLORS.stripe;
+      const w = size * 0.24;
+      for (let i = -2; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(px + i * w * 2, py);
+        ctx.lineTo(px + i * w * 2 + w, py);
+        ctx.lineTo(px + i * w * 2 + w + size, py + size);
+        ctx.lineTo(px + i * w * 2 + size, py + size);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else {
+      // Hollow: two diagonals inside the outline sketch the hazard without claiming the cell.
+      ctx.strokeStyle = OBSTACLE_COLORS.stripe;
+      ctx.lineWidth = Math.max(2, cell * 0.06);
+      ctx.beginPath();
+      ctx.moveTo(px, py); ctx.lineTo(px + size, py + size);
+      ctx.moveTo(px + size * 0.5, py); ctx.lineTo(px + size, py + size * 0.5);
+      ctx.stroke();
     }
     ctx.restore();
     ctx.save();
+    if (!armed) ctx.globalAlpha = 0.30 + 0.40 * Math.abs(Math.sin(now / 150));
     ctx.strokeStyle = OBSTACLE_COLORS.edge;
     ctx.lineWidth = Math.max(2, cell * 0.07);
-    ctx.shadowColor = OBSTACLE_COLORS.edge;
-    ctx.shadowBlur = cell * 0.35;
+    if (armed) { ctx.shadowColor = OBSTACLE_COLORS.edge; ctx.shadowBlur = cell * 0.35; }
+    else ctx.setLineDash([cell * 0.12, cell * 0.1]);
     ctx.strokeRect(px, py, size, size);
+    ctx.setLineDash([]);
     ctx.restore();
   }
+}
+
+// Every tile that matches the head, ringed. This is how the merge rule is taught without
+// words on a player's first run, and it is what makes Chill gentle.
+function drawMatchHints(ctx, L, game, now) {
+  const headValue = game.snake.values[0];
+  ctx.save();
+  ctx.strokeStyle = `rgba(255,255,255,${0.4 + 0.35 * Math.abs(Math.sin(now / 320))})`;
+  ctx.lineWidth = Math.max(2, L.cell * 0.07);
+  for (const t of game.board.tiles) {
+    if (t.value !== headValue) continue;
+    roundRect(ctx, L.ox + t.x * L.cell + 1, L.oy + t.y * L.cell + 1, L.cell - 2, L.cell - 2, L.cell * 0.28);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 // Grid cell every current segment came from, index-aligned to snake.cells.
@@ -352,7 +382,7 @@ function drawReady(ctx, L, now) {
 }
 
 // Draw one frame. `view` is {width, height} in CSS px; `now` is performance.now().
-export function draw(ctx, view, game, fx, now, motion) {
+export function draw(ctx, view, game, fx, now, motion, hint = false) {
   const L = layout(view);
   ctx.clearRect(0, 0, view.width, view.height);
   ctx.save();
@@ -363,8 +393,9 @@ export function draw(ctx, view, game, fx, now, motion) {
   drawBoard(ctx, L);
   drawWalls(ctx, L);
   drawTail(ctx, L, pos[pos.length - 1], game.snake); // under the tiles: a tile behind the tail covers the tip
-  drawObstacles(ctx, L, game.board);
+  drawObstacles(ctx, L, game.board, now);
   drawTiles(ctx, L, game.board.tiles);
+  if (hint) drawMatchHints(ctx, L, game, now);
   drawSnake(ctx, L, game.snake, pos);
   drawDeath(ctx, L, fx, now);
   drawRings(ctx, L, fx, now);
