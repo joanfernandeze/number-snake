@@ -285,9 +285,9 @@ test('a cascade buys breathing room, a single merge does not', () => {
   startRun(g);
   assert.equal(g.relief, 0);
   assert.equal(currentTarget(g), targetInterval(g.eaten, g.cfg), 'no relief, no stretch');
-  // A two-merge cascade: head 2, body 2 and 4, eat a 2 -> 4 -> 8.
+  // Eating a 2 onto [2, 4, 4] cascades twice: 2+2 -> 4, then 4+4 -> 8.
   g.snake.cells = [{ x: 3, y: 5 }, { x: 3, y: 6 }, { x: 3, y: 7 }];
-  g.snake.values = [2, 2, 4];
+  g.snake.values = [2, 4, 4];
   g.snake.direction = { ...UP }; g.snake.queue = [];
   g.board.tiles = [{ x: 3, y: 4, value: 2 }];
   const ev = step(g);

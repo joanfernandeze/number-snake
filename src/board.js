@@ -98,7 +98,9 @@ export function armObstacles(board, snakeCells) {
   const kept = [];
   for (const o of board.obstacles) {
     if (o.armed) { kept.push(o); continue; }
-    o.warn -= 1;
+    // A hand-made obstacle with no countdown arms at once; that is the sane default for
+    // a fixture, and it should not depend on NaN comparing false.
+    o.warn = Number.isFinite(o.warn) ? o.warn - 1 : 0;
     if (o.warn > 0) { kept.push(o); continue; }
     if (snakeCells.some(c => c.x === o.x && c.y === o.y)) continue; // cancelled
     o.armed = true;
