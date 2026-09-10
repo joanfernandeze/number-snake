@@ -37,6 +37,26 @@ export const DIFFICULTIES = {
 export const OBSTACLE = {
   max: 8,           // most obstacles a board will ever hold
   minHeadDist: 4,   // Manhattan cells of clearance from the head when one lands
+  warnTicks: 5,     // moves an obstacle blinks before it turns solid
+};
+
+// A cascade buys a moment of breathing room: the target interval is stretched for a few
+// moves, so skill is rewarded with time as well as with points.
+export const RELIEF = {
+  minMerges: 2,   // cascades of at least this many merges earn it
+  factor: 1.18,   // target interval multiplier while it lasts
+  ticks: 12,      // how many moves it lasts
+};
+
+// Sound is generated with oscillators, so there is nothing to download. Wired up separately.
+export const SOUND = {
+  storageKey: 'numberSnake.sound',
+  gain: 0.06,
+  eatHz: 330,
+  mergeBaseHz: 440,  // the first merge of a cascade; each further merge steps up a fifth
+  mergeStep: 1.5,
+  obstacleHz: 110,
+  deathHz: 160,
 };
 
 export const DEFAULT_DIFFICULTY = 'classic';

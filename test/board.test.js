@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
 import {
   createBoard, tileAt, removeTile, pickValue, spawnTile, refill, spawnObstacle, obstacleAt,
+  armedObstacleAt, armObstacles,
 } from '../src/board.js';
+import { OBSTACLE } from '../src/constants.js';
 
 test('createBoard has the given size and no tiles', () => {
   const b = createBoard(7, 11);
@@ -131,4 +133,34 @@ test('tiles never spawn on an obstacle', () => {
   refill(board, createRng(5), 4, [], 5, 0.45);
   assert.ok(board.tiles.every(t => !(t.x === 1 && t.y === 0)), JSON.stringify(board.tiles));
   assert.equal(board.tiles.length, 2, 'only the two free cells get tiles');
+});
+
+test('a fresh obstacle lands unarmed, blocking spawns but harmless to touch', () => {
+  const board = createBoard();
+  const head = { x: 0, y: 0 };
+  const o = spawnObstacle(board, createRng(4), [head], head, 3);
+  assert.equal(o.armed, false);
+  assert.equal(o.warn, OBSTACLE.warnTicks);
+  assert.ok(obstacleAt(board, o.x, o.y), 'it occupies the cell for spawning');
+  assert.equal(armedObstacleAt(board, o.x, o.y), null, 'but it cannot kill yet');
+});
+
+test('armObstacles counts a fresh obstacle down and then turns it solid', () => {
+  const board = createBoard();
+  board.obstacles = [{ x: 2, y: 3, armed: false, warn: 3 }];
+  assert.deepEqual(armObstacles(board, []), []);
+  assert.equal(board.obstacles[0].warn, 2);
+  assert.deepEqual(armObstacles(board, []), []);
+  const armed = armObstacles(board, []);
+  assert.deepEqual(armed, [{ x: 2, y: 3 }], 'it reports the cell that just turned solid');
+  assert.equal(board.obstacles[0].armed, true);
+  assert.ok(armedObstacleAt(board, 2, 3), 'and now it kills');
+  assert.deepEqual(armObstacles(board, []), [], 'an armed obstacle is left alone');
+});
+
+test('an obstacle about to arm under the snake is cancelled instead of killing', () => {
+  const board = createBoard();
+  board.obstacles = [{ x: 2, y: 3, armed: false, warn: 1 }];
+  assert.deepEqual(armObstacles(board, [{ x: 2, y: 3 }]), []);
+  assert.equal(board.obstacles.length, 0, 'it gives up rather than kill from underneath');
 });

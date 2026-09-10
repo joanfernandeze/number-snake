@@ -1,8 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
-import { createGame, step, startRun, targetInterval, smoothInterval, tickDue, nextTickTime } from '../src/game.js';
-import { SPAWN, TIMING, START, DIFFICULTIES, DEFAULT_DIFFICULTY, OBSTACLE } from '../src/constants.js';
+import {
+  createGame, step, startRun, targetInterval, smoothInterval, tickDue, nextTickTime, currentTarget,
+} from '../src/game.js';
+import { SPAWN, TIMING, START, DIFFICULTIES, DEFAULT_DIFFICULTY, OBSTACLE, RELIEF } from '../src/constants.js';
 
 const UP = { x: 0, y: -1 }, DOWN = { x: 0, y: 1 };
 
@@ -237,4 +239,75 @@ test('every level drops obstacles, and Chill fills its board the most slowly', (
   // its climb from a median tile of 64 to 32, and a hard level should make the player fail,
   // not deny them the climb. Its difficulty comes from speed and from having two tiles.
   assert.equal(frenzy.obstacleEvery, classic.obstacleEvery);
+});
+
+test('a new obstacle is harmless until it has finished warning', () => {
+  const g = createGame(createRng(1));
+  startRun(g);
+  g.board.tiles = [];
+  g.board.obstacles = [{ x: 3, y: 4, armed: false, warn: 2 }];
+  g.snake.cells = [{ x: 3, y: 5 }];
+  g.snake.values = [2];
+  g.snake.direction = { ...UP }; g.snake.queue = [];
+  const ev = step(g);
+  assert.equal(ev.over, false, 'driving through a blinking obstacle is safe');
+  assert.deepEqual(g.snake.cells[0], { x: 3, y: 4 });
+});
+
+test('step reports the cells that just turned solid', () => {
+  const g = createGame(createRng(1));
+  startRun(g);
+  g.board.tiles = [];
+  g.board.obstacles = [{ x: 0, y: 0, armed: false, warn: 1 }];
+  g.snake.cells = [{ x: 3, y: 5 }];
+  g.snake.values = [2];
+  g.snake.direction = { ...UP }; g.snake.queue = [];
+  const ev = step(g);
+  assert.deepEqual(ev.armed, [{ x: 0, y: 0 }]);
+  assert.equal(step(g).armed.length, 0, 'only on the tick it happens');
+});
+
+test('an armed obstacle still ends the run', () => {
+  const g = createGame(createRng(1));
+  startRun(g);
+  g.board.tiles = [];
+  g.board.obstacles = [{ x: 3, y: 4, armed: true, warn: 0 }];
+  g.snake.cells = [{ x: 3, y: 5 }];
+  g.snake.values = [2];
+  g.snake.direction = { ...UP }; g.snake.queue = [];
+  const ev = step(g);
+  assert.equal(ev.over, true);
+  assert.equal(g.lastCause.type, 'obstacle');
+});
+
+test('a cascade buys breathing room, a single merge does not', () => {
+  const g = createGame(createRng(1));
+  startRun(g);
+  assert.equal(g.relief, 0);
+  assert.equal(currentTarget(g), targetInterval(g.eaten, g.cfg), 'no relief, no stretch');
+  // A two-merge cascade: head 2, body 2 and 4, eat a 2 -> 4 -> 8.
+  g.snake.cells = [{ x: 3, y: 5 }, { x: 3, y: 6 }, { x: 3, y: 7 }];
+  g.snake.values = [2, 2, 4];
+  g.snake.direction = { ...UP }; g.snake.queue = [];
+  g.board.tiles = [{ x: 3, y: 4, value: 2 }];
+  const ev = step(g);
+  assert.ok(ev.merges >= RELIEF.minMerges, `expected a cascade, got ${ev.merges}`);
+  assert.equal(ev.relief, true);
+  assert.equal(g.relief, RELIEF.ticks);
+  assert.ok(Math.abs(currentTarget(g) - targetInterval(g.eaten, g.cfg) * RELIEF.factor) < 1e-9);
+});
+
+test('relief runs out after its ticks and the speed returns', () => {
+  const g = createGame(createRng(1));
+  startRun(g);
+  g.board.tiles = [];
+  g.relief = 2;
+  g.snake.cells = [{ x: 3, y: 8 }];
+  g.snake.values = [2];
+  g.snake.direction = { ...UP }; g.snake.queue = [];
+  step(g);
+  assert.equal(g.relief, 1);
+  step(g);
+  assert.equal(g.relief, 0);
+  assert.equal(currentTarget(g), targetInterval(g.eaten, g.cfg));
 });

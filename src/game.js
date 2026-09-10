@@ -1,4 +1,4 @@
-import { GRID, TIMING, START, DIFFICULTIES, DEFAULT_DIFFICULTY, OBSTACLE } from './constants.js';
+import { GRID, TIMING, START, DIFFICULTIES, DEFAULT_DIFFICULTY, OBSTACLE, RELIEF } from './constants.js';
 import * as Snake from './snake.js';
 import * as Board from './board.js';
 
@@ -55,6 +55,7 @@ export function createGame(rng, cfg = DIFFICULTIES[DEFAULT_DIFFICULTY]) {
     started: false,   // the run does not move until the player's first input
     ticks: 0,         // ticks stepped since the run started
     eaten: 0,         // tiles eaten: the clock the speed ramp runs on
+    relief: 0,        // moves of breathing room left, earned by a cascade
     score: 0,
     bestTile: Snake.maxValue(snake),
     bestCombo: 0,
@@ -70,25 +71,34 @@ export function startRun(game) {
   game.started = true;
 }
 
+// The interval the loop should actually aim for: the level's curve, stretched while a
+// cascade's breathing room lasts.
+export function currentTarget(game) {
+  const base = targetInterval(game.eaten, game.cfg);
+  return game.relief > 0 ? base * RELIEF.factor : base;
+}
+
 // Advance the game by one tick. Returns an event object for render/FX:
 //   { over, ate, merges, gained, cell, cause }
 export function step(game) {
   if (game.over) return { over: true };
   if (!game.started) return { over: false, waiting: true };
   game.ticks += 1;
+  if (game.relief > 0) game.relief -= 1;
+  const armed = Board.armObstacles(game.board, game.snake.cells);
   const s = game.snake, b = game.board;
   const next = Snake.nextHeadCell(s);
 
   if (Snake.isWall(next, b.cols, b.rows)) {
     game.over = true;
     game.lastCause = { type: 'wall', cell: next };
-    return { over: true, cause: game.lastCause };
+    return { over: true, cause: game.lastCause, armed };
   }
 
-  if (Board.obstacleAt(b, next.x, next.y)) {
+  if (Board.armedObstacleAt(b, next.x, next.y)) {
     game.over = true;
     game.lastCause = { type: 'obstacle', cell: next };
-    return { over: true, cause: game.lastCause };
+    return { over: true, cause: game.lastCause, armed };
   }
 
   const tile = Board.tileAt(b, next.x, next.y);
@@ -97,7 +107,7 @@ export function step(game) {
   if (Snake.hitsSelf(s, next, willEat)) {
     game.over = true;
     game.lastCause = { type: 'self', cell: next };
-    return { over: true, cause: game.lastCause };
+    return { over: true, cause: game.lastCause, armed };
   }
 
   if (willEat) {
@@ -105,6 +115,8 @@ export function step(game) {
     game.eaten += 1;
     Board.removeTile(b, next.x, next.y);
     game.score += r.gained;
+    const relief = r.merges >= RELIEF.minMerges;
+    if (relief) game.relief = RELIEF.ticks;
     if (r.merges > game.bestCombo) game.bestCombo = r.merges;
     const mv = Snake.maxValue(s);
     if (mv > game.bestTile) game.bestTile = mv;
@@ -116,9 +128,9 @@ export function step(game) {
       obstacle = Board.spawnObstacle(b, game.rng, s.cells, s.cells[0]);
     }
     Board.refill(b, game.rng, spawnRef(game), s.cells, game.cfg.maxTiles, game.cfg.decay);
-    return { over: false, ate: true, merges: r.merges, gained: r.gained, cell: next, obstacle };
+    return { over: false, ate: true, merges: r.merges, gained: r.gained, cell: next, obstacle, armed, relief };
   }
 
   Snake.move(s);
-  return { over: false, ate: false, merges: 0, gained: 0, cell: next, obstacle: null };
+  return { over: false, ate: false, merges: 0, gained: 0, cell: next, obstacle: null, armed, relief: false };
 }

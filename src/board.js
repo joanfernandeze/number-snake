@@ -80,7 +80,31 @@ export function spawnObstacle(board, rng, snakeCells, head, minHeadDist = OBSTAC
   const pool = clear.length ? clear : beside;
   if (!pool.length) return null;
   const cell = pool[randInt(rng, pool.length)];
-  const obstacle = { x: cell.x, y: cell.y };
+  const obstacle = { x: cell.x, y: cell.y, armed: false, warn: OBSTACLE.warnTicks };
   board.obstacles.push(obstacle);
   return obstacle;
+}
+
+// Only an armed obstacle can end a run; a blinking one is still a warning.
+export function armedObstacleAt(board, x, y) {
+  const o = obstacleAt(board, x, y);
+  return o && o.armed ? o : null;
+}
+
+// Count every blinking obstacle down one move. Returns the cells that just turned solid.
+// One about to arm under the snake gives up instead of killing from underneath.
+export function armObstacles(board, snakeCells) {
+  const armed = [];
+  const kept = [];
+  for (const o of board.obstacles) {
+    if (o.armed) { kept.push(o); continue; }
+    o.warn -= 1;
+    if (o.warn > 0) { kept.push(o); continue; }
+    if (snakeCells.some(c => c.x === o.x && c.y === o.y)) continue; // cancelled
+    o.armed = true;
+    armed.push({ x: o.x, y: o.y });
+    kept.push(o);
+  }
+  board.obstacles = kept;
+  return armed;
 }
