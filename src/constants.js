@@ -47,7 +47,7 @@ export const OBSTACLE = {
 // A cascade buys a moment of breathing room: the target interval is stretched for a few
 // moves, so skill is rewarded with time as well as with points.
 export const RELIEF = {
-  minMerges: 2,   // cascades of at least this many merges earn it
+  minMerges: 3,   // only a real chain earns it: at two it fired seven times a run and stopped feeling like a reward
   factor: 1.18,   // target interval multiplier while it lasts
   ticks: 12,      // how many moves it lasts
 };
