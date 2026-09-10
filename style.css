@@ -66,3 +66,17 @@ html, body {
   background: #111935; border-radius: 10px; user-select: text; -webkit-user-select: text;
 }
 #statsCopied { display: block; margin-top: 6px; font-size: 12px; color: #93a4c3; }
+#levels {
+  display: flex; gap: 8px; touch-action: none;
+}
+#levels button {
+  min-height: 44px; padding: 8px 16px;
+  background: #111935; color: #93a4c3;
+  border: 1px solid #263156; border-radius: 999px;
+  font-size: 13px; font-weight: 700; letter-spacing: .3px; cursor: pointer;
+}
+#levels button[aria-pressed="true"] {
+  background: #6366f1; color: #fff; border-color: #6366f1;
+}
+/* Changing level restarts the run, so the row is out of reach while one is in progress. */
+#levels.busy { opacity: .35; pointer-events: none; }

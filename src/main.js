@@ -4,7 +4,7 @@ import * as Render from './render.js';
 import * as Snake from './snake.js';
 import * as Fx from './fx.js';
 import { initInput } from './input.js';
-import { GRID, STORAGE_KEY, DEATH, UI } from './constants.js';
+import { GRID, STORAGE_KEY, DEATH, UI, DIFFICULTIES, DEFAULT_DIFFICULTY, DIFFICULTY_KEY } from './constants.js';
 import { loadRuns, saveRuns, buildRun, summarize, formatStats } from './telemetry.js';
 
 const canvas = document.getElementById('game');
@@ -40,6 +40,24 @@ function fitCanvas() {
 }
 
 let best = loadBest();
+
+function loadDifficulty() {
+  try {
+    const k = localStorage.getItem(DIFFICULTY_KEY);
+    if (k && DIFFICULTIES[k]) return k;
+  } catch { /* ignore */ }
+  return DEFAULT_DIFFICULTY;
+}
+let difficulty = loadDifficulty();
+
+// The row is dimmed while a run is in progress: picking a level restarts, and losing a run
+// to a stray tap on the buttons under the board would be infuriating.
+function paintLevels() {
+  for (const b of $('levels').querySelectorAll('button')) {
+    b.setAttribute('aria-pressed', String(b.dataset.level === difficulty));
+  }
+  $('levels').classList.toggle('busy', !!(game && game.started && !game.over));
+}
 let game, fx, lastTick, motion, prevNow, interval;
 
 const SESSION = Date.now().toString(36); // one page load = one "player session"
@@ -49,15 +67,16 @@ window.numberSnakeStats = () => summarize(runs); // call from DevTools during a 
 
 function start() {
   const seed = (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0;
-  game = Game.createGame(createRng(seed));
+  game = Game.createGame(createRng(seed), DIFFICULTIES[difficulty]);
   fx = Fx.createFx();
   motion = { kind: 'none', progress: 1 };
-  interval = Game.targetInterval(0);
+  interval = Game.targetInterval(0, game.cfg);
   lastTick = performance.now();
   $('overlay').classList.add('hidden');
   $('stats').classList.add('hidden');
   $('statsCopied').classList.add('hidden');
   run = { session: SESSION, t0: null, firstMergeMs: null };
+  paintLevels();
 }
 
 function onDirection(dir) {
@@ -90,7 +109,7 @@ function onGameOver(ev, now) {
 function frame(now) {
   const dt = prevNow === undefined ? 0 : now - prevNow;
   prevNow = now;
-  interval = Game.smoothInterval(interval, Game.targetInterval(game.score), dt);
+  interval = Game.smoothInterval(interval, Game.targetInterval(game.eaten, game.cfg), dt);
 
   const elapsed = now - lastTick;
   if (game.started && !game.over && Game.tickDue(elapsed, interval, game.snake.queue.length > 0)) {
@@ -111,6 +130,7 @@ function frame(now) {
         if (run.firstMergeMs === null) run.firstMergeMs = Math.round(now - run.t0);
       }
     }
+    if (game.ticks <= 1 || ev.over) paintLevels();
   }
   // The slide lasts as long as the interval that will fire the next tick. That interval
   // eases rather than jumps, so the slide it paces cannot lurch either.
@@ -151,7 +171,15 @@ $('statsCopy').addEventListener('click', async () => {
 });
 window.addEventListener('resize', fitCanvas);
 window.addEventListener('orientationchange', fitCanvas);
+$('levels').addEventListener('click', (e) => {
+  const key = e.target && e.target.dataset && e.target.dataset.level;
+  if (!key || !DIFFICULTIES[key]) return;
+  difficulty = key;
+  try { localStorage.setItem(DIFFICULTY_KEY, key); } catch { /* ignore */ }
+  start();
+});
 
 fitCanvas();
 start();
+paintLevels();
 requestAnimationFrame(frame);
