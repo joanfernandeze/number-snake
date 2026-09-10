@@ -77,11 +77,11 @@ test('summarize ignores fields missing from records written by older builds', ()
 
 test('buildRun assembles the record from the live run, game and fatal event', () => {
   const run = { session: 's1', t0: 1000, firstMergeMs: 2500 };
-  const game = { ticks: 42, score: 96, bestTile: 32, bestCombo: 2 };
+  const game = { cfg: { key: 'frenzy' }, ticks: 42, eaten: 22, score: 96, bestTile: 32, bestCombo: 2 };
   const ev = { over: true, cause: { type: 'self', cell: { x: 1, y: 1 } } };
   const rec = buildRun(run, game, ev, 31000, 1700000000000);
   assert.deepEqual(rec, {
-    session: 's1', firstMergeMs: 2500, durationMs: 30000, ticks: 42, score: 96,
+    session: 's1', difficulty: 'frenzy', firstMergeMs: 2500, durationMs: 30000, ticks: 42, eaten: 22, score: 96,
     bestTile: 32, bestCombo: 2, cause: 'self', endedAt: 1700000000000,
   });
 });
@@ -114,8 +114,25 @@ test('formatStats shows dashes when there is nothing to report', () => {
   assert.ok(text.includes('deaths: –'), text);
 });
 
-test('formatStats lists a single death cause without a separator and always six lines', () => {
+test('formatStats lists a single death cause without a separator and always seven lines', () => {
   const text = formatStats({ ...summarize([]), causes: { wall: 1 } });
   assert.ok(text.includes('deaths: wall 1'), text);
-  assert.equal(text.split('\n').length, 6);
+  assert.equal(text.split('\n').length, 7);
+});
+
+test('summarize and formatStats report the levels that were played', () => {
+  const runs = [
+    { session: 'a', difficulty: 'classic', bestTile: 32, durationMs: 40000, cause: 'self' },
+    { session: 'a', difficulty: 'classic', bestTile: 64, durationMs: 60000, cause: 'wall' },
+    { session: 'a', difficulty: 'frenzy', bestTile: 16, durationMs: 20000, cause: 'self' },
+  ];
+  const s = summarize(runs);
+  assert.deepEqual(s.difficulties, { classic: 2, frenzy: 1 });
+  assert.ok(formatStats(s).includes('levels: classic 2 · frenzy 1'), formatStats(s));
+});
+
+test('summarize copes with records from before levels existed', () => {
+  const s = summarize([{ session: 'a', bestTile: 8, durationMs: 1000, cause: 'wall' }]);
+  assert.deepEqual(s.difficulties, {});
+  assert.ok(formatStats(s).includes('levels: –'), formatStats(s));
 });

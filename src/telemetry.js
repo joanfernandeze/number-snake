@@ -3,8 +3,9 @@ import { TELEMETRY } from './constants.js';
 // Per-run records and the spec §2 aggregates. Pure; storage is injected so it
 // is testable in Node (defaults to window.localStorage in the browser).
 //
-// A run record: { session, firstMergeMs|null, durationMs, ticks, score, bestTile,
-//                 bestCombo, cause: 'wall'|'self', endedAt }, as produced by `buildRun`.
+// A run record: { session, difficulty, firstMergeMs|null, durationMs, ticks, eaten,
+//                 score, bestTile, bestCombo, cause: 'wall'|'self', endedAt }, as
+//                 produced by `buildRun`.
 // `session` is one page load, so runs-per-session approximates "runs per player".
 
 export function loadRuns(storage = globalThis.localStorage, key = TELEMETRY.storageKey) {
@@ -33,9 +34,11 @@ export function median(nums) {
 export function buildRun(run, game, ev, now, endedAt = Date.now()) {
   return {
     session: run.session,
+    difficulty: game.cfg ? game.cfg.key : 'unknown',
     firstMergeMs: run.firstMergeMs,
     durationMs: Math.round(now - run.t0),
     ticks: game.ticks,
+    eaten: game.eaten,
     score: game.score,
     bestTile: game.bestTile,
     bestCombo: game.bestCombo,
@@ -53,6 +56,8 @@ export function summarize(runs) {
   const sessions = new Set(runs.map(r => r.session)).size;
   const causes = {};
   for (const r of runs) if (typeof r.cause === 'string') causes[r.cause] = (causes[r.cause] || 0) + 1;
+  const difficulties = {};
+  for (const r of runs) if (typeof r.difficulty === 'string') difficulties[r.difficulty] = (difficulties[r.difficulty] || 0) + 1;
   const tiles = nums(runs, 'bestTile');
   return {
     runs: runs.length,
@@ -63,6 +68,7 @@ export function summarize(runs) {
     bestTile: tiles.reduce((m, v) => Math.max(m, v), 0),
     medianBestTile: median(tiles),
     causes,
+    difficulties,
   };
 }
 
@@ -71,12 +77,15 @@ export function formatStats(s) {
   const sec = (ms) => (ms === null ? '–' : `${(ms / 1000).toFixed(1)} s`);
   const entries = Object.entries(s.causes);
   const causes = entries.length ? entries.map(([k, v]) => `${k} ${v}`).join(' · ') : '–';
+  const levelEntries = Object.entries(s.difficulties || {});
+  const levels = levelEntries.length ? levelEntries.map(([k, v]) => `${k} ${v}`).join(' · ') : '–';
   return [
     'Number Snake stats',
     `runs: ${s.runs} (${s.runsPerSession} per session, ${s.neverMerged} never merged)`,
     `first merge: median ${sec(s.medianFirstMergeMs)}`,
     `run length: median ${sec(s.medianDurationMs)}`,
     `best tile: ${s.bestTile} (median ${s.medianBestTile === null ? '–' : s.medianBestTile})`,
+    `levels: ${levels}`,
     `deaths: ${causes}`,
   ].join('\n');
 }
