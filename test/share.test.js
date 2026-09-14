@@ -37,4 +37,5 @@ test('a campaign card names the level and its stars, and never a streak', () => 
   ]);
   assert.equal(shareText({ campaignLevel: 12, stars: 0, bestTile: 32, durationMs: 9000 }).split('\n')[0], `${GAME.name} · Level 12 ☆☆☆`);
   assert.equal(shareText({ campaignLevel: 1, stars: 3, bestTile: 64, durationMs: 40000 }).split('\n')[0], `${GAME.name} · Level 1 ★★★`);
+  assert.equal(shareText({ campaignLevel: 4, bestTile: 16, durationMs: 5000 }).split('\n')[0], `${GAME.name} · Level 4 ☆☆☆`, 'stars default to none');
 });

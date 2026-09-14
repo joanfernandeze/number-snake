@@ -107,8 +107,10 @@ function drawBridge(ctx, a, b, cell, colorA, colorB) {
 // Its base starts inside the segment body (the segment paints over it) and it is
 // clipped to the board so it never spills over the wall frame. Drawn under the
 // tiles (see draw()), so a tile spawned in the cell behind the tail covers the tip
-// instead of the tip painting over the tile.
-function drawTail(ctx, L, last, snake) {
+// instead of the tip painting over the tile. When the cell it points into is a wall
+// block, the clip shrinks to the tail's own cell so the tip stops at that edge instead
+// of painting over the block (walls are architecture, not something the tail passes).
+function drawTail(ctx, L, last, snake, board) {
   const d = tailDirection(snake);
   const cell = L.cell, pad = cell * PAD;
   const cx = last.px + cell / 2, cy = last.py + cell / 2;
@@ -118,9 +120,13 @@ function drawTail(ctx, L, last, snake) {
   const bx = cx + d.x * base, by = cy + d.y * base;
   const ax = cx + d.x * (base + len), ay = cy + d.y * (base + len);
   const px = -d.y, py = d.x;
+  const tailCell = snake.cells[snake.cells.length - 1];
+  const pointCell = { x: tailCell.x + d.x, y: tailCell.y + d.y };
+  const blocked = !!(board && board.walls && board.walls.has(`${pointCell.x},${pointCell.y}`));
   ctx.save();
   ctx.beginPath();
-  ctx.rect(L.ox, L.oy, L.cols * cell, L.rows * cell);
+  if (blocked) ctx.rect(L.ox + tailCell.x * cell, L.oy + tailCell.y * cell, cell, cell);
+  else ctx.rect(L.ox, L.oy, L.cols * cell, L.rows * cell);
   ctx.clip();
   ctx.fillStyle = colorFor(snake.values[snake.values.length - 1]);
   ctx.beginPath();
@@ -415,7 +421,7 @@ export function draw(ctx, view, game, fx, now, motion, hint = false) {
   drawBoard(ctx, L);
   drawWalls(ctx, L);
   drawWallCells(ctx, L, game.board);
-  drawTail(ctx, L, pos[pos.length - 1], game.snake); // under the tiles: a tile behind the tail covers the tip
+  drawTail(ctx, L, pos[pos.length - 1], game.snake, game.board); // under the tiles: a tile behind the tail covers the tip
   drawObstacles(ctx, L, game.board, now);
   drawTiles(ctx, L, game.board.tiles);
   if (hint) drawMatchHints(ctx, L, game, now);
