@@ -1,4 +1,4 @@
-import { GRID, POWER_COLORS, FALLBACK_COLOR, FX, DEATH, OBSTACLE_COLORS } from './constants.js';
+import { GRID, POWER_COLORS, FALLBACK_COLOR, FX, DEATH, OBSTACLE_COLORS, WALL_COLORS } from './constants.js';
 import { ageOf } from './fx.js';
 import { nextDirection } from './snake.js';
 
@@ -179,6 +179,27 @@ function drawBoard(ctx, L) {
   }
 }
 
+// A wall is part of the board's shape: a solid dark block with a lighter inner edge, drawn under
+// everything that moves. No stripes and no glow: those mean "arrived during the run".
+function drawWallCells(ctx, L, board) {
+  if (!board.walls || board.walls.size === 0) return;
+  const cell = L.cell, pad = cell * 0.04, size = cell - pad * 2;
+  const lw = Math.max(1.5, cell * 0.05);
+  ctx.save();
+  for (const key of board.walls) {
+    const [x, y] = key.split(',').map(Number);
+    const px = L.ox + x * cell + pad, py = L.oy + y * cell + pad;
+    ctx.fillStyle = WALL_COLORS.body;
+    roundRect(ctx, px, py, size, size, cell * 0.16);
+    ctx.fill();
+    ctx.strokeStyle = WALL_COLORS.edge;
+    ctx.lineWidth = lw;
+    roundRect(ctx, px + lw, py + lw, size - lw * 2, size - lw * 2, cell * 0.12);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawTiles(ctx, L, tiles) {
   for (const t of tiles) {
     const px = L.ox + t.x * L.cell, py = L.oy + t.y * L.cell;
@@ -303,7 +324,8 @@ function drawDeath(ctx, L, fx, now) {
   const on = t >= d.life || Math.floor(t / (DEATH.flashPeriodMs / 2)) % 2 === 0;
   ctx.fillStyle = on ? 'rgba(239,68,68,0.9)' : 'rgba(239,68,68,0.25)';
   const c = d.cell;
-  if (d.type === 'self' || d.type === 'obstacle') {
+  const inside = c && c.x >= 0 && c.y >= 0 && c.x < L.cols && c.y < L.rows;
+  if (d.type === 'self' || d.type === 'obstacle' || (d.type === 'wall' && inside)) {
     roundRect(ctx, L.ox + c.x * L.cell, L.oy + c.y * L.cell, L.cell, L.cell, L.cell * 0.22);
     ctx.fill();
     return;
@@ -392,6 +414,7 @@ export function draw(ctx, view, game, fx, now, motion, hint = false) {
   const pos = segmentPositions(L, game.snake, motion);
   drawBoard(ctx, L);
   drawWalls(ctx, L);
+  drawWallCells(ctx, L, game.board);
   drawTail(ctx, L, pos[pos.length - 1], game.snake); // under the tiles: a tile behind the tail covers the tip
   drawObstacles(ctx, L, game.board, now);
   drawTiles(ctx, L, game.board.tiles);

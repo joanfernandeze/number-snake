@@ -80,3 +80,11 @@ export function playObstacle() {
 export function playDeath() {
   tone(SOUND.deathHz, 520, { type: 'sawtooth', gain: SOUND.gain, slideTo: SOUND.deathHz * 0.25 });
 }
+
+// Victory: four notes climbing a major chord, the opposite shape to the death slide. Triangle
+// waves so it reads as a chime, not an alarm.
+export function playWin() {
+  [1, 1.25, 1.5, 2].forEach((ratio, i) => {
+    tone(SOUND.winHz * ratio, 260, { type: 'triangle', gain: SOUND.gain * 0.9, delay: i * 0.11 });
+  });
+}

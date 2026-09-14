@@ -27,3 +27,14 @@ test('daily #0 is a real daily, not free play', () => {
   assert.equal(t.split('\n')[0], `${GAME.name} · Daily #0`);
   assert.equal(t.split('\n')[1], '🐍 Best tile 8 · 5 s · 🔥 2-day streak');
 });
+
+test('a campaign card names the level and its stars, and never a streak', () => {
+  const t = shareText({ campaignLevel: 5, stars: 2, bestTile: 64, durationMs: 52000, streak: 9 });
+  assert.deepEqual(t.split('\n'), [
+    `${GAME.name} · Level 5 ★★☆`,
+    '🐍 Best tile 64 · 52 s',
+    GAME.url,
+  ]);
+  assert.equal(shareText({ campaignLevel: 12, stars: 0, bestTile: 32, durationMs: 9000 }).split('\n')[0], `${GAME.name} · Level 12 ☆☆☆`);
+  assert.equal(shareText({ campaignLevel: 1, stars: 3, bestTile: 64, durationMs: 40000 }).split('\n')[0], `${GAME.name} · Level 1 ★★★`);
+});
