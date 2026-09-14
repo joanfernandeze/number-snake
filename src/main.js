@@ -5,8 +5,11 @@ import * as Snake from './snake.js';
 import * as Fx from './fx.js';
 import * as Sound from './sound.js';
 import { initInput } from './input.js';
-import { GRID, STORAGE_KEY, DEATH, UI, DIFFICULTIES, DEFAULT_DIFFICULTY } from './constants.js';
+import { GRID, STORAGE_KEY, DEATH, UI, DIFFICULTIES, DEFAULT_DIFFICULTY, DAILY, ANALYTICS } from './constants.js';
 import { loadRuns, saveRuns, buildRun, summarize, formatStats } from './telemetry.js';
+import { dayKey, dailyNumber, seedFor, loadDaily, saveDaily, streak, recordDaily } from './daily.js';
+import { shareText } from './share.js';
+import { deviceFacts, sendRun } from './analytics.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -46,10 +49,40 @@ let best = loadBest();
 // picked on the game-over panel sticks for the rest of the session.
 let difficulty = DEFAULT_DIFFICULTY;
 
+// 'free' is an ordinary run on the chosen level. 'daily' is today's seeded board on Classic and
+// the first one counts; 'practice' replays that board without touching the record or streak.
+let mode = 'free';
+let daily = loadDaily();
+
 function paintLevels() {
   for (const b of $('levels').querySelectorAll('button')) {
     b.setAttribute('aria-pressed', String(b.dataset.level === difficulty));
   }
+}
+
+// The HUD chip and the panel button both say where today's daily stands. During a run the chip
+// is out of reach: a tap there must never restart the game under the player.
+function paintDaily() {
+  const today = dayKey(), n = dailyNumber(today), done = daily.results[today];
+  const label = done ? `Daily #${n} ✓ ${done.bestTile}` : `Daily #${n}`;
+  const chip = $('dailyBtn');
+  chip.textContent = label;
+  chip.dataset.done = String(!!done);
+  chip.disabled = !!(game && game.started && !game.over);
+  $('dailyPanelBtn').textContent = done ? `Practise Daily #${n}` : `Play Daily #${n}`;
+}
+
+// The game-over panel reads differently for a daily than for free play.
+function paintPanel() {
+  const today = dayKey(), n = dailyNumber(today);
+  const isDaily = mode !== 'free';
+  $('ovTitle').textContent = mode === 'daily' ? `Daily #${n}` : mode === 'practice' ? `Daily #${n} · practice` : 'Game Over';
+  $('playAgain').textContent = isDaily ? 'Practise this board' : 'Play Again';
+  $('levels').classList.toggle('hidden', isDaily);
+  $('levels').previousElementSibling.classList.toggle('hidden', isDaily); // the "Pick a level" hint
+  const s = streak(daily.results, today);
+  $('ovStreak').textContent = s > 0 ? `🔥 ${s}-day streak · best ${daily.bestStreak}` : '';
+  $('ovStreak').classList.toggle('hidden', !(isDaily && s > 0));
 }
 
 function paintSound() {
@@ -65,9 +98,12 @@ let teaching = runs.length === 0;
 let run; // { session, t0, firstMergeMs } for the run in progress
 window.numberSnakeStats = () => summarize(runs); // call from DevTools during a playtest
 
-function start() {
-  const seed = (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0;
-  game = Game.createGame(createRng(seed), DIFFICULTIES[difficulty]);
+function start(opts = {}) {
+  mode = opts.mode || 'free';
+  const today = dayKey();
+  const seed = mode === 'free' ? ((Date.now() ^ (Math.random() * 0xffffffff)) >>> 0) : seedFor(today);
+  const level = mode === 'free' ? difficulty : DAILY.level;
+  game = Game.createGame(createRng(seed), DIFFICULTIES[level]);
   fx = Fx.createFx();
   motion = { kind: 'none', progress: 1 };
   interval = Game.currentTarget(game);
@@ -75,13 +111,16 @@ function start() {
   $('overlay').classList.add('hidden');
   $('stats').classList.add('hidden');
   $('statsCopied').classList.add('hidden');
-  run = { session: SESSION, t0: null, firstMergeMs: null };
+  $('shareText').classList.add('hidden');
+  $('shareNote').classList.add('hidden');
+  run = { session: SESSION, t0: null, firstMergeMs: null, mode, day: today };
   paintLevels();
+  paintDaily();
 }
 
 function onDirection(dir) {
   if (!game || game.over) return;
-  if (!game.started) { Game.startRun(game); lastTick = performance.now(); run.t0 = lastTick; }
+  if (!game.started) { Game.startRun(game); lastTick = performance.now(); run.t0 = lastTick; paintDaily(); }
   Snake.setDirection(game.snake, dir);
 }
 
@@ -94,6 +133,13 @@ function onGameOver(ev, now) {
   if (game.score > best.score) best.score = game.score;
   if (game.bestCombo > best.combo) best.combo = game.bestCombo;
   saveBest(best);
+  run.durationMs = Math.round(now - run.t0);
+  if (mode === 'daily') {
+    recordDaily(daily, run.day, { bestTile: game.bestTile, score: game.score, durationMs: run.durationMs });
+    saveDaily(daily);
+  }
+  paintDaily();
+  paintPanel();
   $('ovTile').textContent = game.bestTile;
   $('ovScore').textContent = game.score;
   $('ovCombo').textContent = game.bestCombo;
@@ -101,6 +147,8 @@ function onGameOver(ev, now) {
   $('ovBestScore').textContent = best.score;
   const rec = buildRun(run, game, ev, now);
   runs = saveRuns([...runs, rec]);
+  // The retention facts travel without any identifier; see analytics.js.
+  sendRun({ ...rec, ...deviceFacts(run.day) }, ANALYTICS.endpoint);
   $('statsText').textContent = formatStats(summarize(runs));
   console.log('[Number Snake] run', rec);
   console.log('[Number Snake] stats', summarize(runs));
@@ -169,7 +217,7 @@ async function copyText(el) {
 }
 
 initInput(canvas, onDirection);
-$('playAgain').addEventListener('click', start);
+$('playAgain').addEventListener('click', () => start({ mode: mode === 'free' ? 'free' : 'practice' }));
 $('statsToggle').addEventListener('click', () => $('stats').classList.toggle('hidden'));
 $('statsCopy').addEventListener('click', async () => {
   const note = $('statsCopied');
@@ -188,12 +236,43 @@ $('levels').addEventListener('click', (e) => {
   const key = e.target && e.target.dataset && e.target.dataset.level;
   if (!key || !DIFFICULTIES[key]) return;
   difficulty = key;
-  start();
+  start({ mode: 'free' });
+});
+
+// The daily: today's board if it is still unplayed, practice on it otherwise. Ignored mid-run.
+function onDaily() {
+  if (game && game.started && !game.over) return;
+  start({ mode: daily.results[dayKey()] ? 'practice' : 'daily' });
+}
+$('dailyBtn').addEventListener('click', onDaily);
+$('dailyPanelBtn').addEventListener('click', onDaily);
+
+$('shareBtn').addEventListener('click', async () => {
+  const today = dayKey();
+  const text = shareText({
+    daily: mode === 'daily' ? dailyNumber(today) : null,
+    level: DIFFICULTIES[game.cfg.key].name,
+    bestTile: game.bestTile,
+    durationMs: run.durationMs ?? (run.t0 === null ? 0 : Math.round(performance.now() - run.t0)),
+    streak: streak(daily.results, today),
+  });
+  const note = $('shareNote');
+  let how = 'copied';
+  try {
+    if (navigator.share) { await navigator.share({ text }); how = 'shared'; }
+    else if (!(await navigator.clipboard.writeText(text).then(() => true).catch(() => false))) how = 'shown';
+  } catch { how = 'shown'; }
+  $('shareText').textContent = text;
+  $('shareText').classList.remove('hidden');
+  note.textContent = how === 'shared' ? 'Shared' : how === 'copied' ? 'Copied to clipboard' : 'Long-press the text to copy it';
+  note.classList.remove('hidden');
+  setTimeout(() => note.classList.add('hidden'), UI.copiedNoteMs);
 });
 
 fitCanvas();
 start();
 paintLevels();
+paintDaily();
 Sound.setMuted(Sound.loadMuted());
 paintSound();
 requestAnimationFrame(frame);

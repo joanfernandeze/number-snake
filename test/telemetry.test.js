@@ -76,14 +76,15 @@ test('summarize ignores fields missing from records written by older builds', ()
 });
 
 test('buildRun assembles the record from the live run, game and fatal event', () => {
-  const run = { session: 's1', t0: 1000, firstMergeMs: 2500 };
+  const run = { session: 's1', t0: 1000, firstMergeMs: 2500, mode: 'daily' };
   const game = { cfg: { key: 'frenzy' }, ticks: 42, eaten: 22, score: 96, bestTile: 32, bestCombo: 2 };
   const ev = { over: true, cause: { type: 'self', cell: { x: 1, y: 1 } } };
   const rec = buildRun(run, game, ev, 31000, 1700000000000);
   assert.deepEqual(rec, {
-    session: 's1', difficulty: 'frenzy', firstMergeMs: 2500, durationMs: 30000, ticks: 42, eaten: 22, score: 96,
+    session: 's1', difficulty: 'frenzy', mode: 'daily', firstMergeMs: 2500, durationMs: 30000, ticks: 42, eaten: 22, score: 96,
     bestTile: 32, bestCombo: 2, cause: 'self', endedAt: 1700000000000,
   });
+  assert.equal(buildRun({ ...run, mode: undefined }, game, ev, 31000, 1700000000000).mode, 'free');
 });
 
 test('saveRuns swallows a storage write failure and still returns the kept runs', () => {

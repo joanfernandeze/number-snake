@@ -10,15 +10,21 @@
   <div id="app">
     <header id="hud">
       <div class="stat"><span class="label">SCORE</span><span id="score">0</span></div>
+      <button id="dailyBtn" class="chip" type="button">Daily</button>
       <div class="stat"><span class="label">BEST TILE</span><span id="bestTile">0</span></div>
     </header>
     <canvas id="game" width="420" height="660"></canvas>
     <div id="overlay" class="hidden">
       <div class="panel">
-        <h1>Game Over</h1>
+        <h1 id="ovTitle">Game Over</h1>
         <p>Tile <strong id="ovTile">0</strong> · Score <strong id="ovScore">0</strong> · Combo <strong id="ovCombo">0</strong></p>
         <p class="best">Best tile <strong id="ovBestTile">0</strong> · Best score <strong id="ovBestScore">0</strong></p>
+        <p id="ovStreak" class="best hidden"></p>
         <button id="playAgain">Play Again</button>
+        <button id="shareBtn" class="secondary" type="button">Share</button>
+        <pre id="shareText" class="hidden"></pre>
+        <span id="shareNote" class="hidden"></span>
+        <button id="dailyPanelBtn" class="link" type="button">Daily</button>
         <p class="levelHint">Pick a level to play it now</p>
         <div id="levels" role="group" aria-label="Difficulty">
           <button type="button" data-level="chill">Chill</button>
@@ -32,6 +38,7 @@
           <button id="statsCopy" class="link" type="button">Copy</button>
           <span id="statsCopied" class="hidden"></span>
         </div>
+        <p class="fine">Anonymous play statistics help improve the game. Nothing personal is collected.</p>
       </div>
     </div>
     <p id="hint">Swipe or use arrow keys. Eat matching numbers to merge up. Don't hit yourself.</p>
