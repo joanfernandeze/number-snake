@@ -72,15 +72,17 @@ function paintDaily() {
   $('dailyPanelBtn').textContent = done ? `Practise Daily #${n}` : `Play Daily #${n}`;
 }
 
-// The game-over panel reads differently for a daily than for free play.
+// The game-over panel reads differently for a daily than for free play. It describes the run
+// that just ended, so it takes its day from `run.day`, not from the live clock; only called
+// from onGameOver, where `run` is always set.
 function paintPanel() {
-  const today = dayKey(), n = dailyNumber(today);
+  const day = run.day, n = dailyNumber(day);
   const isDaily = mode !== 'free';
   $('ovTitle').textContent = mode === 'daily' ? `Daily #${n}` : mode === 'practice' ? `Daily #${n} · practice` : 'Game Over';
   $('playAgain').textContent = isDaily ? 'Practise this board' : 'Play Again';
   $('levels').classList.toggle('hidden', isDaily);
   $('levels').previousElementSibling.classList.toggle('hidden', isDaily); // the "Pick a level" hint
-  const s = streak(daily.results, today);
+  const s = streak(daily.results, day);
   $('ovStreak').textContent = s > 0 ? `🔥 ${s}-day streak · best ${daily.bestStreak}` : '';
   $('ovStreak').classList.toggle('hidden', !(isDaily && s > 0));
 }
@@ -216,14 +218,21 @@ async function copyText(el) {
   return ok;
 }
 
+// Show a short-lived note; a new call restarts the clock so a repeated tap is not cut short by
+// the previous tap's timer.
+const noteTimers = new WeakMap();
+function flashNote(el, text, ms = UI.copiedNoteMs) {
+  el.textContent = text;
+  el.classList.remove('hidden');
+  clearTimeout(noteTimers.get(el));
+  noteTimers.set(el, setTimeout(() => el.classList.add('hidden'), ms));
+}
+
 initInput(canvas, onDirection);
 $('playAgain').addEventListener('click', () => start({ mode: mode === 'free' ? 'free' : 'practice' }));
 $('statsToggle').addEventListener('click', () => $('stats').classList.toggle('hidden'));
 $('statsCopy').addEventListener('click', async () => {
-  const note = $('statsCopied');
-  note.textContent = (await copyText($('statsText'))) ? 'Copied' : 'Text selected — long-press to copy';
-  note.classList.remove('hidden');
-  setTimeout(() => note.classList.add('hidden'), UI.copiedNoteMs);
+  flashNote($('statsCopied'), (await copyText($('statsText'))) ? 'Copied' : 'Text selected — long-press to copy');
 });
 $('soundToggle').addEventListener('click', () => {
   Sound.saveMuted(Sound.setMuted(!Sound.isMuted()));
@@ -248,15 +257,14 @@ $('dailyBtn').addEventListener('click', onDaily);
 $('dailyPanelBtn').addEventListener('click', onDaily);
 
 $('shareBtn').addEventListener('click', async () => {
-  const today = dayKey();
+  const day = run.day; // the run that just ended, not the live clock
   const text = shareText({
-    daily: mode === 'daily' ? dailyNumber(today) : null,
+    daily: mode === 'daily' ? dailyNumber(day) : null,
     level: DIFFICULTIES[game.cfg.key].name,
     bestTile: game.bestTile,
     durationMs: run.durationMs ?? (run.t0 === null ? 0 : Math.round(performance.now() - run.t0)),
-    streak: streak(daily.results, today),
+    streak: streak(daily.results, day),
   });
-  const note = $('shareNote');
   let how = 'copied';
   try {
     if (navigator.share) { await navigator.share({ text }); how = 'shared'; }
@@ -264,9 +272,7 @@ $('shareBtn').addEventListener('click', async () => {
   } catch { how = 'shown'; }
   $('shareText').textContent = text;
   $('shareText').classList.remove('hidden');
-  note.textContent = how === 'shared' ? 'Shared' : how === 'copied' ? 'Copied to clipboard' : 'Long-press the text to copy it';
-  note.classList.remove('hidden');
-  setTimeout(() => note.classList.add('hidden'), UI.copiedNoteMs);
+  flashNote($('shareNote'), how === 'shared' ? 'Shared' : how === 'copied' ? 'Copied to clipboard' : 'Long-press the text to copy it');
 });
 
 fitCanvas();
