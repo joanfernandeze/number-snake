@@ -12,8 +12,8 @@ function fakeStorage(initial) {
   return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, v), dump: () => m.get(CAMPAIGN.storageKey) };
 }
 
-const GOALS = new Set(['tile', 'chain', 'survive']);
-const CONDS = new Set(['tile', 'chain', 'survive', 'eats', 'time']);
+const GOALS = new Set(['tile', 'chain', 'collect']);
+const CONDS = new Set(['tile', 'chain', 'collect', 'eats', 'time']);
 
 test('twelve levels, numbered 1-12, four per act, on shipped boards and speeds', () => {
   assert.equal(LEVELS.length, 12);
@@ -29,6 +29,8 @@ test('twelve levels, numbered 1-12, four per act, on shipped boards and speeds',
     for (const c of l.stars) assert.ok(CONDS.has(c.type) && Number.isInteger(c.value) && c.value > 0, `level ${l.id} star`);
     // A star must be judgeable at the moment of victory: a tile goal cannot ask for a higher tile.
     if (l.goal.type === 'tile') for (const c of l.stars) assert.notEqual(c.type, 'tile', `level ${l.id} asks for a tile beyond its goal`);
+    // A collect goal already counts eaten tiles as the win condition; an eats star would double up.
+    if (l.goal.type === 'collect') for (const c of l.stars) assert.notEqual(c.type, 'eats', `level ${l.id} has both a collect goal and an eats star`);
   });
   assert.equal(LEVELS[0].matchHint, true);
   assert.equal(LEVELS[0].maxTiles, 4);
@@ -42,8 +44,8 @@ test('conditionMet judges each condition type from the run facts', () => {
   assert.equal(conditionMet({ type: 'tile', value: 128 }, f), false);
   assert.equal(conditionMet({ type: 'chain', value: 3 }, f), true);
   assert.equal(conditionMet({ type: 'chain', value: 4 }, f), false);
-  assert.equal(conditionMet({ type: 'survive', value: 75 }, f), true);
-  assert.equal(conditionMet({ type: 'survive', value: 76 }, f), false);
+  assert.equal(conditionMet({ type: 'collect', value: 24 }, f), true);
+  assert.equal(conditionMet({ type: 'collect', value: 24 }, { ...f, eaten: 23 }), false);
   assert.equal(conditionMet({ type: 'eats', value: 24 }, f), true);
   assert.equal(conditionMet({ type: 'eats', value: 23 }, f), false);
   assert.equal(conditionMet({ type: 'time', value: 75 }, f), true);
@@ -54,7 +56,7 @@ test('conditionMet judges each condition type from the run facts', () => {
 test('describe gives the English label the UI shows', () => {
   assert.equal(describe({ type: 'tile', value: 64 }), 'Reach 64');
   assert.equal(describe({ type: 'chain', value: 3 }), 'Chain ×3');
-  assert.equal(describe({ type: 'survive', value: 90 }), 'Survive 90 s');
+  assert.equal(describe({ type: 'collect', value: 30 }), 'Eat 30 tiles');
   assert.equal(describe({ type: 'eats', value: 24 }), '24 tiles or fewer');
   assert.equal(describe({ type: 'time', value: 75 }), 'Under 75 s');
 });

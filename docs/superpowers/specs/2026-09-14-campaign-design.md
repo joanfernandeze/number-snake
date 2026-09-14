@@ -31,7 +31,7 @@ This is the first time the game has a way to **win** a run. Until now every run 
   fewer`, `★★★ under 75 s`), and `Swipe to start`. The card lets gestures pass through; the first
   swipe or arrow key removes it and starts the run.
 - **During a campaign run** the right-hand HUD stat shows the goal instead of the best tile: label
-  `REACH` / `CHAIN` / `SURVIVE`, value `64` / `×3` / a countdown in seconds.
+  `REACH` / `CHAIN` / `EAT`, value `64` / `×3` / `12/30` (eaten over target).
 - **Winning** stops the snake at once: no death flash, no shake, a short rising chord. The panel
   reads `Level cleared!`, the three conditions each with ✓ or ✗, the stars earned, then **Level 6
   ▸** / **Retry** / **Map**. The usual Share, Sound and Stats controls remain.
@@ -49,36 +49,39 @@ A level is **a board plus three conditions from one small vocabulary**:
 | --------- | ------- | -------------- |
 | `tile ≥ V` | the snake has built a tile of value V | `bestTile` |
 | `chain ≥ K` | one cascade of K or more merges has happened | `bestCombo` |
-| `survive ≥ T` | T seconds have passed since the first move | `elapsedMs` |
+| `collect ≥ N` | the snake has eaten N tiles | `eaten` |
 | `eats ≤ E` | at most E tiles eaten so far | `eaten` |
 | `time ≤ T` | at most T seconds have passed | `elapsedMs` |
 
 The **first condition is the goal**: the run ends in victory the moment it holds. The other two are
 checked at that same moment and award the second and third star. Every condition can therefore be
 judged at the instant of winning; a level never asks for "more" of the thing that already ended it.
-A goal is always one of `tile`, `chain`, `survive`; the extra stars may use any of the five.
+A goal is always one of `tile`, `chain`, `collect`; the extra stars may use any of the five.
 
 Twelve levels in three acts; each act adds one source of pressure on top of the walls:
 
 | # | Act | Board | Goal ★ | ★★ | ★★★ | Speed | Obstacles |
 | - | --- | ----- | ------ | -- | --- | ----- | --------- |
 | 1 | Learn | Open | tile 64 | eats ≤ 24 | chain ≥ 2 | Classic, match hints on, 4 tiles | none |
-| 2 | Learn | The pillars | tile 64 | eats ≤ 24 | time ≤ 75 s | Classic | none |
-| 3 | Learn | The pillars | chain 3 | eats ≤ 30 | tile ≥ 64 | Classic | none |
-| 4 | Learn | The pillars | tile 128 | eats ≤ 40 | chain ≥ 3 | Classic | none |
-| 5 | Pressure | The lanes | tile 64 | eats ≤ 24 | time ≤ 75 s | Classic | every 15 |
-| 6 | Pressure | The lanes | survive 90 s | tile ≥ 64 | tile ≥ 128 | Classic | every 15 |
-| 7 | Pressure | The lanes | tile 128 | eats ≤ 40 | chain ≥ 3 | Classic | every 15 |
-| 8 | Pressure | The chambers | tile 128 | eats ≤ 40 | chain ≥ 3 | Classic | every 15 |
-| 9 | Mastery | The chambers | chain 4 | eats ≤ 40 | tile ≥ 128 | Frenzy | every 10 |
+| 2 | Learn | The pillars | tile 64 | eats ≤ 28 | time ≤ 45 s | Classic | none |
+| 3 | Learn | The pillars | chain 3 | eats ≤ 12 | tile ≥ 64 | Classic | none |
+| 4 | Learn | The pillars | tile 128 | eats ≤ 46 | chain ≥ 4 | Classic | none |
+| 5 | Pressure | The lanes | tile 64 | eats ≤ 26 | time ≤ 50 s | Classic | every 15 |
+| 6 | Pressure | The lanes | collect 30 | tile ≥ 64 | tile ≥ 128 | Classic | every 15 |
+| 7 | Pressure | The lanes | tile 128 | eats ≤ 40 | chain ≥ 4 | Classic | every 15 |
+| 8 | Pressure | The chambers | tile 128 | eats ≤ 40 | chain ≥ 4 | Classic | every 15 |
+| 9 | Mastery | The chambers | chain 4 | eats ≤ 20 | tile ≥ 128 | Frenzy | every 10 |
 | 10 | Mastery | The chambers | tile 128 | eats ≤ 36 | time ≤ 90 s | Frenzy | every 10 |
-| 11 | Mastery | The ring | survive 120 s | tile ≥ 64 | tile ≥ 128 | Frenzy | every 10 |
+| 11 | Mastery | The ring | collect 40 | tile ≥ 64 | tile ≥ 128 | Frenzy | every 10 |
 | 12 | Mastery | The ring | tile 128 | eats ≤ 36 | chain ≥ 4 | Frenzy | every 10 |
 
 Rules of the list: every new board opens with a `tile 64` goal so the shape is learnt before it
 demands; act boundaries are where the pressure changes; the finale is the most enclosed board at
 the fastest speed, and it asks for 128, not 256, because an ending nobody reaches is not an ending.
 The star thresholds above are **starting values, calibrated before publishing** (§8).
+
+`survive` was dropped after calibration showed it is won by circling without eating; `collect`
+forces growth and the ramp.
 
 **Unlocking** is linear: clearing level N (one star) unlocks N+1. Stars never gate anything; they
 exist to bring the player back to a level. Attempts are unlimited. Each attempt uses a fresh random
@@ -176,6 +179,10 @@ bot's wins **★★ holds in roughly half and ★★★ in roughly a fifth**, an
 attempt in ten on acts 1–2 and one in thirty on act 3 (it is a much weaker player than a human who
 has reached that level; if it cannot win a level at all, the level is too hard). The calibrated
 values are what ships; the table in §3 is the starting point.
+
+The bot finds its way to the target tile by breadth-first search over the board, so a wall segment
+between it and a tile no longer strands it; a `time` star is still scaled ×1.4 before rounding,
+because the bot moves the instant a path is clear and a human takes a beat to look.
 
 ## 9. Not in this pass
 

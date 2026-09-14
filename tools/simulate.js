@@ -57,8 +57,53 @@ function isSafe(g, d) {
   return !Snake.hitsSelf(s, cell, willEat);
 }
 
-// Greedy "skilled" policy: head for a value-matching tile (else the smallest-value
-// nearest tile), choosing the first safe step toward it.
+// Cells the BFS below may not enter: every obstacle (armed or not — a countdown still turns
+// solid before the bot could act on the warning) and the snake's own body, except the tail,
+// which vacates on a move that does not eat. A snapshot of the board as it is now, not a
+// step-by-step simulation of the tail following the head along the path.
+function blockedCells(g) {
+  const s = g.snake, b = g.board;
+  const blocked = new Set();
+  for (const o of b.obstacles) blocked.add(`${o.x},${o.y}`);
+  const bodyLen = s.cells.length > 1 ? s.cells.length - 1 : s.cells.length;
+  for (let i = 0; i < bodyLen; i++) blocked.add(`${s.cells[i].x},${s.cells[i].y}`);
+  return blocked;
+}
+
+// Shortest path from the head to `target`, breadth-first over the grid (frame, walls, obstacles
+// and body are impassable). Returns the direction of the path's first step, or null when no path
+// exists — a wall segment can genuinely cut the reachable board in two.
+function bfsDir(g, target) {
+  const s = g.snake, b = g.board, h = s.cells[0];
+  const blocked = blockedCells(g);
+  const key = (x, y) => `${x},${y}`;
+  const startKey = key(h.x, h.y), goalKey = key(target.x, target.y);
+  if (startKey === goalKey) return null;
+  const cameFrom = new Map([[startKey, null]]);
+  const queue = [h];
+  for (let qi = 0; qi < queue.length; qi++) {
+    const cur = queue[qi];
+    if (key(cur.x, cur.y) === goalKey) break;
+    for (const d of DIRS) {
+      const nx = cur.x + d.x, ny = cur.y + d.y, nk = key(nx, ny);
+      if (cameFrom.has(nk) || blocked.has(nk)) continue;
+      if (Snake.isWall({ x: nx, y: ny }, b.cols, b.rows)) continue;
+      if (Board.wallAt(b, nx, ny)) continue;
+      cameFrom.set(nk, key(cur.x, cur.y));
+      queue.push({ x: nx, y: ny });
+    }
+  }
+  if (!cameFrom.has(goalKey)) return null;
+  let cur = goalKey, prev = cameFrom.get(cur);
+  while (prev !== startKey) { cur = prev; prev = cameFrom.get(cur); }
+  const [cx, cy] = cur.split(',').map(Number);
+  return { x: cx - h.x, y: cy - h.y };
+}
+
+// Greedy "skilled" policy: head for a value-matching tile (else the smallest-value nearest
+// tile), path-finding around walls to reach it. A wall segment used to send this policy into an
+// endless left-right bounce (spec follow-up, 2026-09-14); BFS is the fix, and the old "first
+// safe step" heuristic still covers the rare case where no path exists at all.
 function greedyDir(g) {
   const s = g.snake, b = g.board, h = s.cells[0], hv = s.values[0];
   let target = null, best = Infinity;
@@ -67,6 +112,10 @@ function greedyDir(g) {
     const matchPenalty = t.value === hv ? 0 : 1000 + t.value;
     const sc = matchPenalty * 100 + dist;
     if (sc < best) { best = sc; target = t; }
+  }
+  if (target) {
+    const d = bfsDir(g, target);
+    if (d && isSafe(g, d)) return d;
   }
   const ordered = [];
   if (target) {
