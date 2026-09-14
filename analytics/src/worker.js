@@ -6,7 +6,7 @@ const SITE = 'https://joanfernandeze.github.io';
 
 function allowedOrigin(origin) {
   if (!origin) return SITE;
-  if (origin === SITE || /^http:\/\/localhost(:\d+)?$/.test(origin)) return origin;
+  if (origin === SITE || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin;
   return null;
 }
 

@@ -100,8 +100,8 @@ function paintGoalCard() {
   card.classList.remove('hidden');
 }
 
-// In a campaign run the right-hand HUD stat is the goal: what to reach, or the seconds left.
-function paintHud(now) {
+// In a campaign run the right-hand HUD stat is the goal: what to reach, or how many eaten so far.
+function paintHud() {
   if (!level) {
     $('bestLabel').textContent = 'BEST TILE';
     $('bestTile').textContent = Math.max(best.tile, game.bestTile);
@@ -110,11 +110,7 @@ function paintHud(now) {
   const g = level.goal;
   if (g.type === 'tile') { $('bestLabel').textContent = 'REACH'; $('bestTile').textContent = String(g.value); }
   else if (g.type === 'chain') { $('bestLabel').textContent = 'CHAIN'; $('bestTile').textContent = `×${g.value}`; }
-  else {
-    const left = run.t0 === null ? g.value : Math.max(0, Math.ceil(g.value - (now - run.t0) / 1000));
-    $('bestLabel').textContent = 'SURVIVE';
-    $('bestTile').textContent = `${left}s`;
-  }
+  else { $('bestLabel').textContent = 'EAT'; $('bestTile').textContent = `${game.eaten}/${g.value}`; }
 }
 
 // The map: three acts of four levels, stars per level, the next level highlighted, locked ones
@@ -224,6 +220,9 @@ window.numberSnakeStats = () => summarize(runs); // call from DevTools during a 
 window.numberSnakeWin = () => {
   if (level && game && game.started && !game.over) onGameOver(Game.finish(game), performance.now());
 };
+// Playtest hook: the live game object, for inspection from DevTools (e.g. to force a state and
+// watch the victory path: numberSnakeGame().bestTile = 64).
+window.numberSnakeGame = () => game;
 
 function start(opts = {}) {
   mode = opts.mode || 'free';
@@ -248,7 +247,7 @@ function start(opts = {}) {
   paintLevels();
   paintDaily();
   paintGoalCard();
-  paintHud(performance.now());
+  paintHud();
 }
 
 function onDirection(dir) {
@@ -284,7 +283,7 @@ function onGameOver(ev, now) {
   run.verdict = verdict; // the share card reads the stars from here
   paintDaily();
   paintPanel(verdict);
-  paintHud(now);
+  paintHud();
   $('ovTile').textContent = game.bestTile;
   $('ovScore').textContent = game.score;
   $('ovCombo').textContent = game.bestCombo;
@@ -332,7 +331,8 @@ function frame(now) {
       if (ev.armed && ev.armed.length) Sound.playObstacle();
     }
   }
-  // A campaign goal is judged after every tick and, for the time-based ones, every frame.
+  // A campaign goal is judged every frame; it can only change on a tick, but the check is cheap
+  // and keeps the loop simple.
   if (level && game.started && !game.over && evaluate(level, facts(now)).won) {
     onGameOver(Game.finish(game), now);
   }
@@ -342,7 +342,7 @@ function frame(now) {
 
   Fx.update(fx, now, dt);
   $('score').textContent = game.score;
-  paintHud(now);
+  paintHud();
   ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0); // canvas resizes reset the transform
   const hint = game.cfg.matchHint || (teaching && !game.over);
   Render.draw(ctx, view, game, fx, now, motion, hint);

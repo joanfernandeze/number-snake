@@ -68,7 +68,7 @@ Twelve levels in three acts; each act adds one source of pressure on top of the 
 | 4 | Learn | The pillars | tile 128 | eats ≤ 46 | chain ≥ 4 | Classic | none |
 | 5 | Pressure | The lanes | tile 64 | eats ≤ 26 | time ≤ 50 s | Classic | every 15 |
 | 6 | Pressure | The lanes | collect 30 | tile ≥ 64 | tile ≥ 128 | Classic | every 15 |
-| 7 | Pressure | The lanes | tile 128 | eats ≤ 40 | chain ≥ 4 | Classic | every 15 |
+| 7 | Pressure | The lanes | tile 128 | eats ≤ 40 | chain ≥ 4 | Classic | every 20 |
 | 8 | Pressure | The chambers | tile 128 | eats ≤ 40 | chain ≥ 4 | Classic | every 15 |
 | 9 | Mastery | The chambers | chain 4 | eats ≤ 20 | tile ≥ 128 | Frenzy | every 10 |
 | 10 | Mastery | The chambers | tile 128 | eats ≤ 36 | time ≤ 90 s | Frenzy | every 10 |

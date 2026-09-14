@@ -24,7 +24,7 @@ export const LEVELS = [
   { id: 4,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: tile(128),    stars: [eats(46), chain(4)] },
   { id: 5,  act: 2, board: 'lanes',    speed: 'classic', obstacleEvery: 15, goal: tile(64),     stars: [eats(26), time(50)] },
   { id: 6,  act: 2, board: 'lanes',    speed: 'classic', obstacleEvery: 15, goal: collect(30),  stars: [tile(64), tile(128)] },
-  { id: 7,  act: 2, board: 'lanes',    speed: 'classic', obstacleEvery: 15, goal: tile(128),    stars: [eats(40), chain(4)] },
+  { id: 7,  act: 2, board: 'lanes',    speed: 'classic', obstacleEvery: 20, goal: tile(128),    stars: [eats(40), chain(4)] },
   { id: 8,  act: 2, board: 'chambers', speed: 'classic', obstacleEvery: 15, goal: tile(128),    stars: [eats(40), chain(4)] },
   { id: 9,  act: 3, board: 'chambers', speed: 'frenzy',  obstacleEvery: 10, goal: chain(4),     stars: [eats(20), tile(128)] },
   { id: 10, act: 3, board: 'chambers', speed: 'frenzy',  obstacleEvery: 10, goal: tile(128),    stars: [eats(36), time(90)] },
