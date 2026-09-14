@@ -35,25 +35,30 @@ export default {
       try { body = await request.json(); } catch { return json({ error: 'json' }, 400, origin); }
       const r = validateRun(body);
       if (!r) return json({ error: 'shape' }, 400, origin);
-      await env.DB.prepare(
-        `INSERT INTO runs (day_since, days_played, first_of_day, mode, difficulty, score, best_tile,
-                           best_combo, duration_ms, eaten, first_merge_ms, cause)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
-      ).bind(r.daySince, r.daysPlayed, r.firstOfDay, r.mode, r.difficulty, r.score, r.bestTile,
-             r.bestCombo, r.durationMs, r.eaten, r.firstMergeMs, r.cause).run();
+      try {
+        await env.DB.prepare(
+          `INSERT INTO runs (day_since, days_played, first_of_day, mode, difficulty, score, best_tile,
+                             best_combo, duration_ms, eaten, first_merge_ms, cause)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+        ).bind(r.daySince, r.daysPlayed, r.firstOfDay, r.mode, r.difficulty, r.score, r.bestTile,
+               r.bestCombo, r.durationMs, r.eaten, r.firstMergeMs, r.cause).run();
+      } catch { return json({ error: 'server' }, 500, origin); }
       return json({ ok: true }, 200, origin);
     }
 
     if (request.method === 'GET' && url.pathname === '/stats') {
       if (!env.STATS_KEY || url.searchParams.get('key') !== env.STATS_KEY) return json({ error: 'key' }, 401, origin);
       const one = (sql) => env.DB.prepare(sql).first();
-      const [fresh, d1, d7, all, daily] = await Promise.all([
-        one(`SELECT COUNT(*) AS n FROM runs WHERE day_since = 0 AND first_of_day = 1`),
-        one(`SELECT COUNT(*) AS n FROM runs WHERE day_since = 1 AND first_of_day = 1`),
-        one(`SELECT COUNT(*) AS n FROM runs WHERE day_since = 7 AND first_of_day = 1`),
-        one(`SELECT COUNT(*) AS n, AVG(duration_ms) AS ms, AVG(best_tile) AS tile FROM runs`),
-        one(`SELECT COUNT(*) AS n FROM runs WHERE mode = 'daily'`),
-      ]);
+      let fresh, d1, d7, all, daily;
+      try {
+        [fresh, d1, d7, all, daily] = await Promise.all([
+          one(`SELECT COUNT(*) AS n FROM runs WHERE day_since = 0 AND first_of_day = 1`),
+          one(`SELECT COUNT(*) AS n FROM runs WHERE day_since = 1 AND first_of_day = 1`),
+          one(`SELECT COUNT(*) AS n FROM runs WHERE day_since = 7 AND first_of_day = 1`),
+          one(`SELECT COUNT(*) AS n, AVG(duration_ms) AS ms, AVG(best_tile) AS tile FROM runs`),
+          one(`SELECT COUNT(*) AS n FROM runs WHERE mode = 'daily'`),
+        ]);
+      } catch { return json({ error: 'server' }, 500, origin); }
       const pct = (a, b) => (b ? Math.round((100 * a) / b) : null);
       return json({
         newDevices: fresh.n,
