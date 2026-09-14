@@ -4,6 +4,7 @@ import { daysBetween } from './daily.js';
 // Retention analytics that identify nobody. The device keeps its own play history and sends
 // only facts a server can add up — "day N since first play, Mth distinct day, first run of the
 // day" — so returning devices can be counted without ever knowing which device is which.
+// `runFacts` picks exactly the twelve fields that leave the device; nothing else is ever sent.
 
 export function loadDevice(storage = globalThis.localStorage, key = ANALYTICS.storageKey) {
   try {
@@ -21,6 +22,17 @@ export function deviceFacts(todayKey, storage = globalThis.localStorage, key = A
   dev.days = dev.days.slice(-ANALYTICS.maxDays); // a no-op copy once under the cap
   try { storage.setItem(key, JSON.stringify(dev)); } catch { /* ignore */ }
   return { daySince: daysBetween(dev.firstDay, todayKey), daysPlayed: dev.days.length, firstOfDay };
+}
+
+// Exactly the fields the Worker accepts, picked here so nothing else can leave the device even
+// by accident: the privacy claim holds by construction, not by trusting the server to drop extras.
+export function runFacts(rec, device) {
+  return {
+    daySince: device.daySince, daysPlayed: device.daysPlayed, firstOfDay: device.firstOfDay,
+    mode: rec.mode, difficulty: rec.difficulty,
+    score: rec.score, bestTile: rec.bestTile, bestCombo: rec.bestCombo, durationMs: rec.durationMs, eaten: rec.eaten,
+    firstMergeMs: rec.firstMergeMs ?? null, cause: rec.cause,
+  };
 }
 
 // Fire and forget. Never blocks the game, never throws, and does nothing without an endpoint.

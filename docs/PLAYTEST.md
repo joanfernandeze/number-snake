@@ -39,8 +39,8 @@ Every game over logs `[Number Snake] run {...}` and `[Number Snake] stats {...}`
 | `causes.self` vs `.wall` | self should dominate as skill grows       |
 | `medianDurationMs`       | informational: 30–90 s is a healthy loop  |
 
-The same record now also travels to a Cloudflare Worker when `ANALYTICS.endpoint` is configured,
-with one field added: `mode` (`free`, `daily`, or `practice`) — see "Retention numbers" below.
+Twelve of these fields also travel to a Cloudflare Worker when `ANALYTICS.endpoint` is configured,
+picked on the device — see "Retention numbers" below.
 
 Also note by eye: did they say "one more"? Did they notice the **Merge! / Combo x2 / Chain x3!** bursts?
 Did the red flash on the cell (or wall edge) they hit make the death feel like their own fault?
@@ -125,11 +125,13 @@ remove a date.
 
 Every game over sends one record to a Cloudflare Worker (`POST <ANALYTICS.endpoint>`) via
 `sendBeacon`, fire-and-forget: sending can never block the game and a failure is silently dropped.
-Alongside the existing run record the device adds three facts it computes about itself:
-`daySince` (days since its first play, 0 on day one), `daysPlayed` (distinct days played,
-including today), and `firstOfDay` (true on the first run of a calendar day) — `mode` is `free`,
-`daily` or `practice`. No identifier of any kind travels; the device keeps its own history under
-`numberSnake.device`, capped at `ANALYTICS.maxDays`. The server counts: new devices are records
+The device picks exactly twelve fields for that record, on the device, so nothing else can leave
+even by accident: `daySince` (days since its first play, 0 on day one), `daysPlayed` (distinct days
+played, including today), `firstOfDay` (true on the first run of a calendar day), `mode` (`free`,
+`daily` or `practice`), `difficulty`, `score`, `bestTile`, `bestCombo`, `durationMs`, `eaten`,
+`firstMergeMs`, `cause`. The per-page-load `session` id, the absolute `endedAt` timestamp and the
+raw `ticks` count never leave the device — no identifier of any kind travels; the device keeps its
+own history under `numberSnake.device`, capped at `ANALYTICS.maxDays`. The server counts: new devices are records
 with `daySince = 0` and `firstOfDay`; D1 is `daySince = 1` and `firstOfDay` divided by new
 devices; D7 is the same at `daySince = 7`. A device that clears its storage looks new again — an
 accepted error for a prototype. The panel's fine print ("Anonymous play statistics help improve

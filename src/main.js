@@ -9,7 +9,7 @@ import { GRID, STORAGE_KEY, DEATH, UI, DIFFICULTIES, DEFAULT_DIFFICULTY, DAILY, 
 import { loadRuns, saveRuns, buildRun, summarize, formatStats } from './telemetry.js';
 import { dayKey, dailyNumber, seedFor, loadDaily, saveDaily, streak, recordDaily } from './daily.js';
 import { shareText } from './share.js';
-import { deviceFacts, sendRun } from './analytics.js';
+import { deviceFacts, sendRun, runFacts } from './analytics.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -150,7 +150,7 @@ function onGameOver(ev, now) {
   const rec = buildRun(run, game, ev, now);
   runs = saveRuns([...runs, rec]);
   // The retention facts travel without any identifier; see analytics.js.
-  sendRun({ ...rec, ...deviceFacts(run.day) }, ANALYTICS.endpoint);
+  sendRun(runFacts(rec, deviceFacts(run.day)), ANALYTICS.endpoint);
   $('statsText').textContent = formatStats(summarize(runs));
   console.log('[Number Snake] run', rec);
   console.log('[Number Snake] stats', summarize(runs));

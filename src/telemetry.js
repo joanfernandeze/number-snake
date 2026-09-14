@@ -4,7 +4,7 @@ import { TELEMETRY } from './constants.js';
 // is testable in Node (defaults to window.localStorage in the browser).
 //
 // A run record: { session, difficulty, mode: 'free'|'daily'|'practice', firstMergeMs|null,
-//                 durationMs, ticks, eaten, score, bestTile, bestCombo, cause: 'wall'|'self',
+//                 durationMs, ticks, eaten, score, bestTile, bestCombo, cause: 'wall'|'self'|'obstacle',
 //                 endedAt }, as produced by `buildRun`.
 // `session` is one page load, so runs-per-session approximates "runs per player".
 

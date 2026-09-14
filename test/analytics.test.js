@@ -1,8 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadDevice, deviceFacts, sendRun } from '../src/analytics.js';
+import { loadDevice, deviceFacts, sendRun, runFacts } from '../src/analytics.js';
 import { ANALYTICS } from '../src/constants.js';
 import { daysBetween, shiftKey } from '../src/daily.js';
+import { buildRun } from '../src/telemetry.js';
+import { validateRun } from '../analytics/src/validate.js';
 
 function fakeStorage(initial) {
   const m = new Map(initial ? [[ANALYTICS.storageKey, initial]] : []);
@@ -123,4 +125,41 @@ test('sendRun falls through to fetch when sendBeacon itself throws', () => {
     if (prevNav) Object.defineProperty(globalThis, 'navigator', prevNav); else delete globalThis.navigator;
     if (prevFetch) Object.defineProperty(globalThis, 'fetch', prevFetch); else delete globalThis.fetch;
   }
+});
+
+test('runFacts picks exactly the twelve fields the Worker accepts, nothing else', () => {
+  const run = { session: 's1', t0: 1000, firstMergeMs: 2500, mode: 'daily' };
+  const game = { cfg: { key: 'frenzy' }, ticks: 42, eaten: 22, score: 96, bestTile: 32, bestCombo: 2 };
+  const ev = { over: true, cause: { type: 'self', cell: { x: 1, y: 1 } } };
+  const rec = buildRun(run, game, ev, 31000, 1700000000000);
+  const device = { daySince: 3, daysPlayed: 2, firstOfDay: true };
+  const out = runFacts(rec, device);
+  assert.deepEqual(Object.keys(out).sort(), [
+    'bestCombo', 'bestTile', 'cause', 'daySince', 'daysPlayed', 'difficulty',
+    'durationMs', 'eaten', 'firstMergeMs', 'firstOfDay', 'mode', 'score',
+  ]);
+  assert.equal('session' in out, false);
+  assert.equal('endedAt' in out, false);
+  assert.equal('ticks' in out, false);
+  assert.equal(out.mode, 'daily');
+  assert.equal(out.score, 96);
+  assert.equal(out.daySince, 3);
+});
+
+test('runFacts turns a missing firstMergeMs into null', () => {
+  const rec = {
+    session: 's1', difficulty: 'classic', mode: 'free', firstMergeMs: undefined, durationMs: 1000,
+    ticks: 1, eaten: 1, score: 0, bestTile: 2, bestCombo: 0, cause: 'wall', endedAt: 1700000000000,
+  };
+  const out = runFacts(rec, { daySince: 0, daysPlayed: 1, firstOfDay: true });
+  assert.equal(out.firstMergeMs, null);
+});
+
+test('runFacts output satisfies the Worker validator', () => {
+  const rec = {
+    session: 's1', difficulty: 'frenzy', mode: 'practice', firstMergeMs: undefined, durationMs: 5000,
+    ticks: 10, eaten: 5, score: 0, bestTile: 2, bestCombo: 0, cause: 'obstacle', endedAt: 1700000000000,
+  };
+  const out = runFacts(rec, { daySince: 0, daysPlayed: 1, firstOfDay: true });
+  assert.notEqual(validateRun(out), null);
 });
