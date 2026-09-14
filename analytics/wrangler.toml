@@ -1,0 +1,8 @@
+name = "number-snake-analytics"
+main = "src/worker.js"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "number-snake-analytics"
+database_id = "REPLACE_WITH_THE_ID_PRINTED_BY_wrangler_d1_create"
