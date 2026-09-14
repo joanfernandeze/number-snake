@@ -66,7 +66,7 @@ Twelve levels in three acts; each act adds one source of pressure on top of the 
 | 2 | Learn | The pillars | tile 64 | eats ≤ 28 | time ≤ 45 s | Classic | none |
 | 3 | Learn | The pillars | chain 3 | eats ≤ 12 | tile ≥ 64 | Classic | none |
 | 4 | Learn | The pillars | tile 128 | eats ≤ 46 | chain ≥ 4 | Classic | none |
-| 5 | Pressure | The lanes | tile 64 | eats ≤ 26 | time ≤ 50 s | Classic | every 15 |
+| 5 | Pressure | The lanes | tile 64 | eats ≤ 26 | time ≤ 45 s | Classic | every 15 |
 | 6 | Pressure | The lanes | collect 30 | tile ≥ 64 | tile ≥ 128 | Classic | every 15 |
 | 7 | Pressure | The lanes | tile 128 | eats ≤ 40 | chain ≥ 4 | Classic | every 20 |
 | 8 | Pressure | The chambers | tile 128 | eats ≤ 40 | chain ≥ 4 | Classic | every 15 |
@@ -139,8 +139,9 @@ Small, pure additions; the loop in `main.js` grows a mode and a screen.
 - **`src/sound.js`** — `playWin()`: three rising notes, the opposite of the death slide.
 - **`src/share.js`** — `shareText` accepts `campaignLevel` and `stars`.
 - **`src/main.js`** — `mode: 'campaign'` and `level` state; the map panel built from `LEVELS`;
-  the goal card; the HUD goal stat; after each tick and once per frame (for `survive` and `time`),
-  `evaluate` runs on `{ bestTile, bestCombo, eaten, elapsedMs }` and a met goal calls `finish`;
+  the goal card; the HUD goal stat; after each tick and once per frame (the `time` star reads the
+  wall clock), `evaluate` runs on `{ bestTile, bestCombo, eaten, elapsedMs }` and a met goal calls
+  `finish`;
   the game-over handler branches on `ev.won`; buttons for Next / Retry / Map; the map opens on
   load and from any panel.
 

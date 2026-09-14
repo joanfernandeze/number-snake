@@ -162,7 +162,7 @@ The twelve levels, as shipped (`src/campaign.js`, `LEVELS`):
 | 2  | Learn    | The pillars  | Reach 64     | 28 tiles or fewer     | Under 45 s    | Classic | none      |
 | 3  | Learn    | The pillars  | Chain ×3     | 12 tiles or fewer     | Reach 64      | Classic | none      |
 | 4  | Learn    | The pillars  | Reach 128    | 46 tiles or fewer     | Chain ×4      | Classic | none      |
-| 5  | Pressure | The lanes    | Reach 64     | 26 tiles or fewer     | Under 50 s    | Classic | every 15  |
+| 5  | Pressure | The lanes    | Reach 64     | 26 tiles or fewer     | Under 45 s    | Classic | every 15  |
 | 6  | Pressure | The lanes    | Eat 30 tiles | Reach 64              | Reach 128     | Classic | every 15  |
 | 7  | Pressure | The lanes    | Reach 128    | 40 tiles or fewer     | Chain ×4      | Classic | every 20  |
 | 8  | Pressure | The chambers | Reach 128    | 40 tiles or fewer     | Chain ×4      | Classic | every 15  |
@@ -318,7 +318,7 @@ human takes a beat to look:
  2  The pillars   Reach 64        82     52     85     28/20          31/23
  3  The pillars   Chain ×3        93     51     18     12/7           16/9
  4  The pillars   Reach 128       20     51     69     46/37          47/39
- 5  The lanes     Reach 64        39     53     88     25/19          32/25
+ 5  The lanes     Reach 64        39     53     81     25/19          32/25
  6  The lanes     Eat 30 tiles    68     33      2     30/30          38/34
  7  The lanes     Reach 128        4     46     77     41/29          45/36   (obstacles eased to every 20)
  8  The chambers  Reach 128       10     52     79     40/31          44/33
