@@ -1,7 +1,8 @@
 import { DAILY } from './constants.js';
 
-// The daily challenge, kept pure: dates as 'YYYY-MM-DD' keys, a seed per key, and the
-// streak arithmetic. Storage is injected so all of it runs under node --test.
+// The daily challenge: dates as 'YYYY-MM-DD' keys, a seed per key, and the
+// streak arithmetic. Pure except `recordDaily`, which updates the caller's state in place.
+// Storage is injected so all of it runs under node --test.
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -34,7 +35,7 @@ export function seedFor(key) {
 export function loadDaily(storage = globalThis.localStorage, key = DAILY.storageKey) {
   try {
     const v = JSON.parse(storage.getItem(key));
-    if (v && typeof v === 'object' && !Array.isArray(v) && v.results && typeof v.results === 'object') {
+    if (v && typeof v === 'object' && !Array.isArray(v) && v.results && typeof v.results === 'object' && !Array.isArray(v.results)) {
       return { results: v.results, bestStreak: Number.isInteger(v.bestStreak) ? v.bestStreak : 0 };
     }
   } catch { /* fall through */ }
@@ -49,15 +50,16 @@ export function saveDaily(state, storage = globalThis.localStorage, key = DAILY.
 // Consecutive days with a daily completed, ending today if today is played or yesterday if
 // today is still open. No grace days: skip one and it is gone.
 export function streak(results, todayKey) {
-  let key = results[todayKey] ? todayKey : shiftKey(todayKey, -1);
+  let key = Object.hasOwn(results, todayKey) ? todayKey : shiftKey(todayKey, -1);
   let n = 0;
-  while (results[key]) { n += 1; key = shiftKey(key, -1); }
+  while (Object.hasOwn(results, key)) { n += 1; key = shiftKey(key, -1); }
   return n;
 }
 
 // The first attempt of the day is the one that counts; later ones are practice and are ignored.
+// Mutates `state` in place: the caller holds the single live state object and saves it right after.
 export function recordDaily(state, todayKey, result) {
-  if (state.results[todayKey]) return false;
+  if (Object.hasOwn(state.results, todayKey)) return false;
   state.results[todayKey] = result;
   const s = streak(state.results, todayKey);
   if (s > state.bestStreak) state.bestStreak = s;

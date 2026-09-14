@@ -32,12 +32,18 @@ test('seedFor is stable for a day and different between days', () => {
   assert.equal(seedFor('2026-09-14'), seedFor('2026-09-14'));
   assert.notEqual(seedFor('2026-09-14'), seedFor('2026-09-15'));
   assert.ok(Number.isInteger(seedFor('2026-09-14')) && seedFor('2026-09-14') >= 0, 'an unsigned 32-bit seed');
+  assert.equal(seedFor('2026-09-14'), 2429564653, 'fixed FNV-1a 32-bit vector');
 });
 
 test('loadDaily survives missing and corrupt storage and round-trips', () => {
   assert.deepEqual(loadDaily(fakeStorage()), { results: {}, bestStreak: 0 });
   assert.deepEqual(loadDaily(fakeStorage('{nope')), { results: {}, bestStreak: 0 });
   assert.deepEqual(loadDaily(fakeStorage('[]')), { results: {}, bestStreak: 0 });
+  assert.deepEqual(
+    loadDaily(fakeStorage('{"results":[],"bestStreak":5}')),
+    { results: {}, bestStreak: 0 },
+    'array-shaped results is rejected, and bestStreak is not salvaged from a rejected record'
+  );
   const s = fakeStorage();
   saveDaily({ results: { '2026-09-14': { bestTile: 64, score: 300, durationMs: 40000 } }, bestStreak: 1 }, s);
   assert.equal(loadDaily(s).results['2026-09-14'].bestTile, 64);
@@ -51,6 +57,11 @@ test('streak counts consecutive days and forgives an unplayed today, but not a m
   assert.equal(streak(r, '2026-09-16'), 0, 'skipped a whole day: gone');
   assert.equal(streak({ '2026-09-10': {} }, '2026-09-14'), 0);
   assert.equal(streak({}, '2026-09-14'), 0);
+  assert.equal(
+    streak({ '2026-09-13': false, '2026-09-14': {} }, '2026-09-14'),
+    2,
+    'a present-but-falsy result still counts as played'
+  );
 });
 
 test('recordDaily keeps the first attempt only and tracks the best streak', () => {
@@ -60,4 +71,12 @@ test('recordDaily keeps the first attempt only and tracks the best streak', () =
   assert.equal(state.bestStreak, 2);
   assert.equal(recordDaily(state, '2026-09-14', { bestTile: 999 }), false, 'a second attempt does not count');
   assert.equal(state.results['2026-09-14'].bestTile, 128, 'and does not overwrite');
+
+  const falsyState = { results: { '2026-09-13': 0 }, bestStreak: 0 };
+  assert.equal(
+    recordDaily(falsyState, '2026-09-13', { bestTile: 5, score: 1, durationMs: 1 }),
+    false,
+    'a present-but-falsy entry is still a recorded result'
+  );
+  assert.equal(falsyState.results['2026-09-13'], 0, 'and is not overwritten');
 });
