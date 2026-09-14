@@ -146,4 +146,5 @@ export const DAILY = {
 export const ANALYTICS = {
   endpoint: '',
   storageKey: 'numberSnake.device',
+  maxDays: 400, // a year of daily play is plenty
 };

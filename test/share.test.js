@@ -21,3 +21,9 @@ test('a free-play card names the level and never a streak', () => {
 test('a daily with no streak yet leaves the flame out', () => {
   assert.equal(shareText({ daily: 1, bestTile: 16, durationMs: 30000, streak: 0 }).split('\n')[1], '🐍 Best tile 16 · 30 s');
 });
+
+test('daily #0 is a real daily, not free play', () => {
+  const t = shareText({ daily: 0, bestTile: 8, durationMs: 5000, streak: 2 });
+  assert.equal(t.split('\n')[0], `${GAME.name} · Daily #0`);
+  assert.equal(t.split('\n')[1], '🐍 Best tile 8 · 5 s · 🔥 2-day streak');
+});

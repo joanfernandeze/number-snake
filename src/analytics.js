@@ -18,7 +18,7 @@ export function deviceFacts(todayKey, storage = globalThis.localStorage, key = A
   const dev = loadDevice(storage, key) || { firstDay: todayKey, days: [] };
   const firstOfDay = !dev.days.includes(todayKey);
   if (firstOfDay) dev.days.push(todayKey);
-  if (dev.days.length > 400) dev.days = dev.days.slice(-400); // a year of daily play is plenty
+  dev.days = dev.days.slice(-ANALYTICS.maxDays); // a no-op copy once under the cap
   try { storage.setItem(key, JSON.stringify(dev)); } catch { /* ignore */ }
   return { daySince: daysBetween(dev.firstDay, todayKey), daysPlayed: dev.days.length, firstOfDay };
 }
@@ -31,6 +31,8 @@ export function sendRun(record, endpoint = ANALYTICS.endpoint) {
     if (typeof navigator !== 'undefined' && navigator && typeof navigator.sendBeacon === 'function') {
       return navigator.sendBeacon(endpoint, new Blob([body], { type: 'application/json' }));
     }
+  } catch { /* fall through to fetch */ }
+  try {
     if (typeof fetch === 'function') {
       fetch(endpoint, { method: 'POST', body, headers: { 'content-type': 'application/json' }, keepalive: true }).catch(() => {});
       return true;
