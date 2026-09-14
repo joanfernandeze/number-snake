@@ -54,7 +54,10 @@ html, body {
   border: none; border-radius: 12px; background: #6366f1; color: white; cursor: pointer;
 }
 #playAgain:active { transform: scale(.97); }
-.hidden { display: none; }
+/* .hidden means "not rendered", full stop: !important so it always beats a more specific
+   display rule on the same element (id selectors, [attr] selectors, etc.) instead of losing
+   to one by specificity, the way #levels' and #shareNote's own id rules otherwise would. */
+.hidden { display: none !important; }
 .link {
   display: block; margin: 6px auto 0; padding: 12px 16px; min-height: 44px;
   background: none; border: none; color: #93a4c3; font-size: 14px;
