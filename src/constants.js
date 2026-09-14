@@ -144,7 +144,7 @@ export const DAILY = {
 // Retention analytics without identifiers: the device sends only aggregable facts about its
 // own history. An empty endpoint turns sending off entirely.
 export const ANALYTICS = {
-  endpoint: '',
+  endpoint: 'https://number-snake-analytics.projectwardossier.workers.dev/run',
   storageKey: 'numberSnake.device',
   maxDays: 400, // a year of daily play is plenty
 };
