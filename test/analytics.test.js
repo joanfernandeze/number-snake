@@ -127,7 +127,7 @@ test('sendRun falls through to fetch when sendBeacon itself throws', () => {
   }
 });
 
-test('runFacts picks exactly the twelve fields the Worker accepts, nothing else', () => {
+test('runFacts picks exactly the thirteen fields the Worker accepts, nothing else', () => {
   const run = { session: 's1', t0: 1000, firstMergeMs: 2500, mode: 'daily' };
   const game = { cfg: { key: 'frenzy' }, ticks: 42, eaten: 22, score: 96, bestTile: 32, bestCombo: 2 };
   const ev = { over: true, cause: { type: 'self', cell: { x: 1, y: 1 } } };

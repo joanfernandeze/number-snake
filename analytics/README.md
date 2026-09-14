@@ -17,7 +17,9 @@ since its first play, Mth distinct day, first run of the day" and the server onl
    Wrangler redeploys with it.
 7. In the game, set `ANALYTICS.endpoint` in `src/constants.js` to that URL plus `/run` and push.
 
-## Upgrading an existing deployment (campaign, 2026-09-14)
+## Upgrading an existing deployment (once — campaign, 2026-09-14)
+
+Run the `ALTER TABLE` once; a second run fails with "duplicate column name".
 
 The game now sends campaign runs (`mode: 'campaign'`, `cause: 'won'`, and a `level`). A Worker
 deployed before this rejects them, so redeploy **before** pushing the game:

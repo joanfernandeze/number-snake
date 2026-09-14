@@ -1,11 +1,13 @@
-# Number Snake — Playtest guide (v0.2 · daily, share, retention)
+# Number Snake — Playtest guide (v0.3 · campaign)
 
 **Play it:** https://joanfernandeze.github.io/number-snake/ — GitHub Pages, redeploys a minute or two after each push to `main`. Source: https://github.com/joanfernandeze/number-snake
 
 **Question to answer:** does eat → merge → cascade → don't-trap-yourself pull *voluntary* retries?
 Spec: `docs/superpowers/specs/2026-06-30-number-snake-design.md` (§2 targets).
-What changed for this pass: `docs/superpowers/plans/2026-09-08-feel-pass.md` and
-`docs/superpowers/plans/2026-09-14-retention-and-analytics.md`.
+What changed for this pass: `docs/superpowers/plans/2026-09-08-feel-pass.md`,
+`docs/superpowers/plans/2026-09-14-retention-and-analytics.md`,
+`docs/superpowers/plans/2026-09-14-campaign.md` and the spec
+`docs/superpowers/specs/2026-09-14-campaign-design.md`.
 
 ## Run it
 - From this folder: `python -m http.server 8765` → open `http://localhost:8765/`.
@@ -13,8 +15,11 @@ What changed for this pass: `docs/superpowers/plans/2026-09-08-feel-pass.md` and
 - The run does not start until the first swipe / arrow key. Play Again returns to that waiting state.
 
 ## Protocol (per tester, ~10 min)
-1. Hand over the phone with **no explanation**. Say only: "try this".
-2. Watch silently. Tally runs. Note the moment they visibly get "same numbers merge".
+1. Hand over the phone with **no explanation**. Say only: "try this". They land on the campaign
+   map — do not point at anything on it.
+2. Watch silently. Note whether they read the goal card before swiping, or swipe it away
+   unread. Tally runs, levels cleared and retries per level, and the moment they visibly get
+   "same numbers merge".
 3. Stop when *they* stop. Then ask: (a) did any death feel unfair? (b) what were you trying to do?
 4. On the Game Over panel tap **Stats**, then **Copy**, and have them paste the text to you (a screenshot also works). On a desktop, `numberSnakeStats()` in DevTools returns the same data.
 5. **The daily, and coming back.** Have them tap the **Daily** chip for one run — the first attempt
@@ -39,7 +44,7 @@ Every game over logs `[Number Snake] run {...}` and `[Number Snake] stats {...}`
 | `causes.self` vs `.wall` | self should dominate as skill grows       |
 | `medianDurationMs`       | informational: 30–90 s is a healthy loop  |
 
-Twelve of these fields also travel to a Cloudflare Worker when `ANALYTICS.endpoint` is configured,
+Thirteen of these fields also travel to a Cloudflare Worker when `ANALYTICS.endpoint` is configured,
 picked on the device — see "Retention numbers" below.
 
 Also note by eye: did they say "one more"? Did they notice the **Merge! / Combo x2 / Chain x3!** bursts?
@@ -47,9 +52,10 @@ Did the red flash on the cell (or wall edge) they hit make the death feel like t
 
 ## Three levels, and obstacles
 
-A row of buttons under the board picks the level; the choice is remembered. **Classic is the
-default, and the playtest runs on Classic** — the levels are for replay value, not a way to dodge
-the tuning question.
+This is **Endless** — the free-play mode reached from the map. A row of buttons under the board
+picks the level; the choice is remembered. **Classic is the default, and Endless still opens on
+Classic** — the levels are for replay value, not a way to dodge the tuning question. The tester's
+first screen is the campaign map, not this mode directly; see "The campaign" below.
 
 | Knob                       | Chill  | Classic | Frenzy |
 | -------------------------- | ------ | ------- | ------ |
@@ -121,15 +127,87 @@ with a note (`Shared` / `Copied to clipboard` / `Long-press the text to copy it`
 DevTools (Application → Local Storage), or edit the `results` map in either directly to add or
 remove a date.
 
+## The campaign
+
+The game now opens on a **map**: three acts — Learn, Pressure, Mastery — of four levels each, plus
+the unchanged **Endless** and **Daily** one tap away (`Play level N ▸`, `Endless`, `Play Daily #N`).
+Picking a level shows a **goal card** over the board (`Level 5 · The lanes`, the goal in large type
+e.g. `Reach 64`, the two extra-star conditions as `★★ …` / `★★★ …`, and `Swipe to start`) that lets
+gestures through, so the first swipe or arrow key dismisses it and starts the run. During a
+campaign run the HUD's right-hand stat becomes the goal (`REACH 64` / `CHAIN ×3` / `EAT 12/30`)
+instead of the best tile. Winning stops the snake at once — no death flash, no shake, a short
+rising chord — and the panel reads `Level cleared!`, the three conditions each with a ✓ or ✗ and
+the stars earned, then `Level N ▸` (`Campaign complete!` in its place after level 12) / `Retry` /
+`Map`. Dying reads `Level N · not cleared`, restates
+how far you got and the goal, then `Retry` / `Map`. Share on a campaign panel adds a line like
+`Number Snake · Level 5 ★★☆`.
+
+A level is a board plus three conditions from one small vocabulary — the first is the goal that
+ends the run in victory the moment it holds, the other two are judged at that same instant and
+award the second and third star:
+
+| Condition     | Meaning                                              |
+| -------------- | ----------------------------------------------------- |
+| `tile ≥ V`    | the snake has built a tile of value V (`Reach V`)      |
+| `chain ≥ K`   | one cascade of K or more merges has happened (`Chain ×K`) |
+| `collect ≥ N` | the snake has eaten N tiles (`Eat N tiles`)            |
+| `eats ≤ E`    | at most E tiles eaten so far (`E tiles or fewer`)      |
+| `time ≤ T`    | at most T seconds have passed (`Under T s`)            |
+
+The twelve levels, as shipped (`src/campaign.js`, `LEVELS`):
+
+| #  | Act      | Board        | Goal         | ★★                 | ★★★         | Speed   | Obstacles |
+| -- | -------- | ------------ | ------------ | -------------------- | ------------- | ------- | --------- |
+| 1  | Learn    | Open         | Reach 64     | 24 tiles or fewer     | Chain ×2      | Classic | none      |
+| 2  | Learn    | The pillars  | Reach 64     | 28 tiles or fewer     | Under 45 s    | Classic | none      |
+| 3  | Learn    | The pillars  | Chain ×3     | 12 tiles or fewer     | Reach 64      | Classic | none      |
+| 4  | Learn    | The pillars  | Reach 128    | 46 tiles or fewer     | Chain ×4      | Classic | none      |
+| 5  | Pressure | The lanes    | Reach 64     | 26 tiles or fewer     | Under 50 s    | Classic | every 15  |
+| 6  | Pressure | The lanes    | Eat 30 tiles | Reach 64              | Reach 128     | Classic | every 15  |
+| 7  | Pressure | The lanes    | Reach 128    | 40 tiles or fewer     | Chain ×4      | Classic | every 20  |
+| 8  | Pressure | The chambers | Reach 128    | 40 tiles or fewer     | Chain ×4      | Classic | every 15  |
+| 9  | Mastery  | The chambers | Chain ×4     | 20 tiles or fewer     | Reach 128     | Frenzy  | every 10  |
+| 10 | Mastery  | The chambers | Reach 128    | 36 tiles or fewer     | Under 90 s    | Frenzy  | every 10  |
+| 11 | Mastery  | The ring     | Eat 40 tiles | Reach 64              | Reach 128     | Frenzy  | every 10  |
+| 12 | Mastery  | The ring     | Reach 128    | 36 tiles or fewer     | Chain ×4      | Frenzy  | every 10  |
+
+The five boards (`src/boards.js`):
+
+| Board        | What the shape does to play                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------ |
+| Open         | no walls at all — a bare test of speed and space                                                 |
+| The pillars  | two single-cell blocks, one above the start and one below — a couple of dodges a lap, nothing more |
+| The lanes    | solid columns down both sides of the middle rows box most of the board into one narrow vertical corridor |
+| The chambers | one wall clean across the middle with a single gap — every route between the two halves goes through that doorway |
+| The ring     | a broken box walls the centre off from the corners — the inside loop is short, breaking out to a corner takes the long way round |
+
+**Unlocking is linear:** clearing a level (one star) unlocks the next; stars never gate anything —
+they exist to bring a player back to a level, not to block one. Attempts are unlimited, and **each
+attempt uses a fresh random seed**, so a level cannot be memorised spawn by spawn.
+
+**What to watch in a tester:** which level they stall on; whether they retry a failed level or
+leave for the map; whether they ever come back to replay a cleared level for its missing stars;
+whether they read the goal card or swiped it away unread; whether a wall death feels as fair as an
+obstacle or self death; and, if they get there, whether the finale (level 12: The ring at Frenzy
+speed) reads as hard-but-possible rather than a wall.
+
+**Testing shortcuts:** reset progress with `localStorage.removeItem('numberSnake.campaign')`; jump
+ahead by setting `localStorage['numberSnake.campaign'] = '{"stars":{"1":1,"2":1,"3":1}}'` and
+reloading; `numberSnakeGame()` (DevTools) returns the live game object, so e.g.
+`numberSnakeGame().bestTile = 64` forces the victory path on a `Reach 64` level; `numberSnakeWin()`
+ends the current campaign run as a finish right away — it records only what the run has actually
+earned, so an unmet goal still shows `Level N · not cleared`.
+
 ## Retention numbers, without identifying anyone
 
 Every game over sends one record to a Cloudflare Worker (`POST <ANALYTICS.endpoint>`) via
 `sendBeacon`, fire-and-forget: sending can never block the game and a failure is silently dropped.
-The device picks exactly twelve fields for that record, on the device, so nothing else can leave
+The device picks exactly thirteen fields for that record, on the device, so nothing else can leave
 even by accident: `daySince` (days since its first play, 0 on day one), `daysPlayed` (distinct days
 played, including today), `firstOfDay` (true on the first run of a calendar day), `mode` (`free`,
-`daily` or `practice`), `difficulty`, `score`, `bestTile`, `bestCombo`, `durationMs`, `eaten`,
-`firstMergeMs`, `cause`. The per-page-load `session` id, the absolute `endedAt` timestamp and the
+`daily`, `practice` or `campaign`), `difficulty`, `score`, `bestTile`, `bestCombo`, `durationMs`,
+`eaten`, `firstMergeMs`, `cause` (now including `won`, on a cleared campaign level), `level` (1–12
+in campaign mode, `null` otherwise). The per-page-load `session` id, the absolute `endedAt` timestamp and the
 raw `ticks` count never leave the device — no identifier of any kind travels; the device keeps its
 own history under `numberSnake.device`, capped at `ANALYTICS.maxDays`. The server counts: new devices are records
 with `daySince = 0` and `firstOfDay`; D1 is `daySince = 1` and `firstOfDay` divided by new
@@ -148,6 +226,12 @@ URL — see `analytics/README.md` for the deploy steps (not repeated here).
 | `d1Percent`                                         | share of them that played again exactly the next day |
 | `d7Percent`                                         | share that played on day seven                     |
 | `runs`, `avgDurationMs`, `avgBestTile`, `dailyRuns` | volume and quality                                 |
+| `campaignRuns`, `campaignWins`                      | campaign attempts and how many ended in victory    |
+| `levels`                                            | per level `{ level, runs, wins }` — the level whose win rate collapses is the one to tune |
+
+These three campaign fields only appear once the Worker has been upgraded for the campaign — see
+`analytics/README.md`, "Upgrading an existing deployment"; a Worker still on the old schema simply
+omits them.
 
 **Success criteria** (spec §6, after one week with a handful of testers):
 
@@ -189,6 +273,11 @@ that level. Everything else is shared.
 | A past daily must never renumber              | never change `DAILY.epoch` once players exist                 |
 | Retention sending should stay off             | leave `ANALYTICS.endpoint` empty (default)                     |
 | Device history grows too large in storage     | lower `ANALYTICS.maxDays` (400)                                |
+| A level's stars feel too easy or too hard      | `LEVELS[n].stars` (tune with the simulator)                    |
+| A level's goal, board, speed or obstacle cadence needs to change | `LEVELS[n].goal` / `board` / `speed` / `obstacleEvery` (a design change — change it with a reason and re-run the simulator) |
+| The victory panel arrives too soon or too late | `UI.winPanelDelayMs`                                            |
+| The victory chord should sit at a different pitch | `SOUND.winHz`                                              |
+| Walls should read as more or less distinct from obstacles | `WALL_COLORS`                                       |
 
 Check any change with the simulator before and after:
 
@@ -211,8 +300,44 @@ is the balance we want: no single way to die dominates. Note the simulated playe
 cell ahead, so it walks into obstacles far more than a human should; treat its obstacle share as a
 ceiling rather than a prediction.
 
+### Campaign calibration (2026-09-14, 300 greedy-bot attempts per level)
+
+`node tools/simulate.js --campaign --runs=300` plays every level 300 times with the greedy
+"plays for matches" policy — which now path-finds around walls by breadth-first search — and
+prints, per level, the win rate and, among wins, how often ★★ and ★★★ held (`node
+tools/simulate.js --campaign=7` runs one level alone). Thresholds are tuned so that among the
+bot's wins **★★ holds in roughly half and ★★★ in roughly a fifth**, and the bot wins at least one
+attempt in ten on acts 1–2 and one in thirty on act 3 (it is a much weaker player than a human who
+has reached that level; if it cannot win a level at all, the level is too hard); any `time`
+threshold is scaled ×1.4 before rounding, because the bot moves the instant a path is clear and a
+human takes a beat to look:
+
+```
+ #  board         goal           win%   ★★%   ★★★%  eats p50/p20   secs p50/p20
+ 1  Open          Reach 64        93     52    100     24/19          24/20
+ 2  The pillars   Reach 64        82     52     85     28/20          31/23
+ 3  The pillars   Chain ×3        93     51     18     12/7           16/9
+ 4  The pillars   Reach 128       20     51     69     46/37          47/39
+ 5  The lanes     Reach 64        39     53     88     25/19          32/25
+ 6  The lanes     Eat 30 tiles    68     33      2     30/30          38/34
+ 7  The lanes     Reach 128        4     46     77     41/29          45/36   (obstacles eased to every 20)
+ 8  The chambers  Reach 128       10     52     79     40/31          44/33
+ 9  The chambers  Chain ×4        43     53      2     19/13          20/15
+10  The chambers  Reach 128        2     20    100     44/41          40/34
+11  The ring      Eat 40 tiles    18     47      2     40/40          39/36
+12  The ring      Reach 128        1     50    100     45/33          41/36
+```
+
+Levels 7, 10 and 12 are hard even for a good player; the plan is to read each level's win rate from
+`/stats` after a week and tune that level, not the whole act. A `survive T s` goal was tried and
+dropped: the bot won it by circling without eating, since nothing in the game ramps unless the
+snake eats.
+
 ## Decision gate
 - D1 ≥ 30 % and the daily is played on a second day → the loop is a habit; the next pass can look
   at where an ad could sit.
 - D1 under 20 % → change the mechanic, don't polish (spec §6).
 - Loop is "fine" but nobody replays → change the mechanic, don't polish (spec §2).
+- Levels cleared per new device on day one ≥ 3 and the daily's D1 not below its earlier baseline →
+  the campaign pulls its weight.
+- Most testers stalling at one level → tune that level, not the campaign.
