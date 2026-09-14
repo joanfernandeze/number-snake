@@ -11,20 +11,33 @@
     <header id="hud">
       <div class="stat"><span class="label">SCORE</span><span id="score">0</span></div>
       <button id="dailyBtn" class="chip" type="button">Daily</button>
-      <div class="stat"><span class="label">BEST TILE</span><span id="bestTile">0</span></div>
+      <div class="stat"><span class="label" id="bestLabel">BEST TILE</span><span id="bestTile">0</span></div>
     </header>
-    <canvas id="game" width="420" height="660"></canvas>
+    <div id="stage">
+      <canvas id="game" width="420" height="660"></canvas>
+      <div id="goalCard" class="hidden" aria-live="polite">
+        <div class="goalLevel" id="goalLevel"></div>
+        <div class="goalMain" id="goalMain"></div>
+        <div class="goalStars"><span id="goalStar2"></span><br><span id="goalStar3"></span></div>
+        <div class="goalGo">Swipe to start</div>
+      </div>
+    </div>
     <div id="overlay" class="hidden">
       <div class="panel">
         <h1 id="ovTitle">Game Over</h1>
+        <p id="ovLevel" class="best hidden"></p>
         <p>Tile <strong id="ovTile">0</strong> · Score <strong id="ovScore">0</strong> · Combo <strong id="ovCombo">0</strong></p>
         <p class="best">Best tile <strong id="ovBestTile">0</strong> · Best score <strong id="ovBestScore">0</strong></p>
         <p id="ovStreak" class="best hidden"></p>
+        <div id="ovStars" class="hidden" aria-label="stars"></div>
+        <div id="ovChecks" class="hidden"></div>
         <button id="playAgain">Play Again</button>
+        <button id="nextLevel" class="hidden" type="button">Next level ▸</button>
         <button id="shareBtn" class="secondary" type="button">Share</button>
         <pre id="shareText" class="hidden"></pre>
         <span id="shareNote" class="hidden"></span>
         <button id="dailyPanelBtn" class="link" type="button">Daily</button>
+        <button id="mapBtn" class="link hidden" type="button">Map</button>
         <p class="levelHint">Pick a level to play it now</p>
         <div id="levels" role="group" aria-label="Difficulty">
           <button type="button" data-level="chill">Chill</button>
@@ -39,6 +52,15 @@
           <span id="statsCopied" class="hidden"></span>
         </div>
         <p class="fine">Anonymous play statistics help improve the game. Nothing personal is collected.</p>
+      </div>
+    </div>
+    <div id="mapOverlay" class="hidden">
+      <div class="panel map">
+        <h1>Campaign · <span id="mapStars">0</span> ★</h1>
+        <div id="mapActs"></div>
+        <button id="mapPlay" class="primary" type="button">Play level 1 ▸</button>
+        <button id="mapEndless" class="secondary" type="button">Endless</button>
+        <button id="mapDaily" class="link" type="button">Daily</button>
       </div>
     </div>
     <p id="hint">Swipe or use arrow keys. Eat matching numbers to merge up. Don't hit yourself.</p>

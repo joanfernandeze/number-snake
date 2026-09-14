@@ -133,6 +133,7 @@ export const TELEMETRY = {
 
 export const UI = {
   copiedNoteMs: 1800, // how long "Copied" stays visible under the stats
+  winPanelDelayMs: 350, // the victory panel arrives a beat after the chime starts
 };
 
 // The game's identity, used by the share card. A rename is one line here.
