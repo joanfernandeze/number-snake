@@ -136,7 +136,7 @@ test('runFacts picks exactly the twelve fields the Worker accepts, nothing else'
   const out = runFacts(rec, device);
   assert.deepEqual(Object.keys(out).sort(), [
     'bestCombo', 'bestTile', 'cause', 'daySince', 'daysPlayed', 'difficulty',
-    'durationMs', 'eaten', 'firstMergeMs', 'firstOfDay', 'mode', 'score',
+    'durationMs', 'eaten', 'firstMergeMs', 'firstOfDay', 'level', 'mode', 'score',
   ]);
   assert.equal('session' in out, false);
   assert.equal('endedAt' in out, false);
@@ -144,6 +144,8 @@ test('runFacts picks exactly the twelve fields the Worker accepts, nothing else'
   assert.equal(out.mode, 'daily');
   assert.equal(out.score, 96);
   assert.equal(out.daySince, 3);
+  assert.equal(runFacts({ ...rec, level: 7 }, device).level, 7);
+  assert.equal(runFacts({ ...rec, level: undefined }, device).level, null);
 });
 
 test('runFacts turns a missing firstMergeMs into null', () => {
@@ -162,4 +164,5 @@ test('runFacts output satisfies the Worker validator', () => {
   };
   const out = runFacts(rec, { daySince: 0, daysPlayed: 1, firstOfDay: true });
   assert.notEqual(validateRun(out), null);
+  assert.ok(validateRun(runFacts({ ...rec, mode: 'campaign', cause: 'won', level: 7 }, { daySince: 0, daysPlayed: 1, firstOfDay: true })), 'a won campaign run is accepted');
 });

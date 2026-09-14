@@ -3,9 +3,9 @@ import { TELEMETRY } from './constants.js';
 // Per-run records and the spec §2 aggregates. Pure; storage is injected so it
 // is testable in Node (defaults to window.localStorage in the browser).
 //
-// A run record: { session, difficulty, mode: 'free'|'daily'|'practice', firstMergeMs|null,
-//                 durationMs, ticks, eaten, score, bestTile, bestCombo, cause: 'wall'|'self'|'obstacle',
-//                 endedAt }, as produced by `buildRun`.
+// A run record: { session, difficulty, mode: 'free'|'daily'|'practice'|'campaign', level: 1-12|null,
+//                 firstMergeMs|null, durationMs, ticks, eaten, score, bestTile, bestCombo,
+//                 cause: 'wall'|'self'|'obstacle'|'won', endedAt }, as produced by `buildRun`.
 // `session` is one page load, so runs-per-session approximates "runs per player".
 
 export function loadRuns(storage = globalThis.localStorage, key = TELEMETRY.storageKey) {
@@ -36,6 +36,7 @@ export function buildRun(run, game, ev, now, endedAt = Date.now()) {
     session: run.session,
     difficulty: game.cfg ? game.cfg.key : 'unknown',
     mode: run.mode || 'free',
+    level: run.level ?? null,
     firstMergeMs: run.firstMergeMs,
     durationMs: Math.round(now - run.t0),
     ticks: game.ticks,

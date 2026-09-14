@@ -4,7 +4,7 @@ import { daysBetween } from './daily.js';
 // Retention analytics that identify nobody. The device keeps its own play history and sends
 // only facts a server can add up — "day N since first play, Mth distinct day, first run of the
 // day" — so returning devices can be counted without ever knowing which device is which.
-// `runFacts` picks exactly the twelve fields that leave the device; nothing else is ever sent.
+// `runFacts` picks exactly the thirteen fields that leave the device; nothing else is ever sent.
 
 export function loadDevice(storage = globalThis.localStorage, key = ANALYTICS.storageKey) {
   try {
@@ -26,12 +26,14 @@ export function deviceFacts(todayKey, storage = globalThis.localStorage, key = A
 
 // Exactly the fields the Worker accepts, picked here so nothing else can leave the device even
 // by accident: the privacy claim holds by construction, not by trusting the server to drop extras.
+// `level` is the campaign level (1-12); it is null outside the campaign.
 export function runFacts(rec, device) {
   return {
     daySince: device.daySince, daysPlayed: device.daysPlayed, firstOfDay: device.firstOfDay,
     mode: rec.mode, difficulty: rec.difficulty,
     score: rec.score, bestTile: rec.bestTile, bestCombo: rec.bestCombo, durationMs: rec.durationMs, eaten: rec.eaten,
     firstMergeMs: rec.firstMergeMs ?? null, cause: rec.cause,
+    level: rec.level ?? null,
   };
 }
 

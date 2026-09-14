@@ -41,3 +41,19 @@ test('only the whitelisted fields survive, so junk cannot ride along', () => {
   const r = validateRun({ ...good, email: 'a@b.c', ip: '1.2.3.4' });
   assert.ok(!('email' in r) && !('ip' in r));
 });
+
+test('campaign runs: mode campaign, cause won, and a nullable level 1-1000', () => {
+  const won = { ...good, mode: 'campaign', cause: 'won', level: 7 };
+  const r = validateRun(won);
+  assert.ok(r);
+  assert.equal(r.mode, 'campaign');
+  assert.equal(r.cause, 'won');
+  assert.equal(r.level, 7);
+  assert.equal(validateRun({ ...good, level: null }).level, null);
+  assert.equal(validateRun(good).level, null, 'missing level is stored as null');
+  assert.equal(validateRun({ ...good, level: 0 }), null);
+  assert.equal(validateRun({ ...good, level: 1.5 }), null);
+  assert.equal(validateRun({ ...good, level: '7' }), null);
+  assert.equal(validateRun({ ...good, level: 1001 }), null);
+  assert.equal(Object.keys(r).length, 13, 'twelve fields plus level');
+});

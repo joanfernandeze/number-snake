@@ -17,6 +17,16 @@ since its first play, Mth distinct day, first run of the day" and the server onl
    Wrangler redeploys with it.
 7. In the game, set `ANALYTICS.endpoint` in `src/constants.js` to that URL plus `/run` and push.
 
+## Upgrading an existing deployment (campaign, 2026-09-14)
+
+The game now sends campaign runs (`mode: 'campaign'`, `cause: 'won'`, and a `level`). A Worker
+deployed before this rejects them, so redeploy **before** pushing the game:
+
+1. `npx wrangler d1 execute number-snake-analytics --remote --command "ALTER TABLE runs ADD COLUMN level INTEGER"`
+2. `npm run deploy`
+
+A fresh install gets the column from `schema.sql` and needs neither step.
+
 ## Read the numbers
 
 `https://number-snake-analytics.<you>.workers.dev/stats?key=<STATS_KEY>` returns:
@@ -27,5 +37,7 @@ since its first play, Mth distinct day, first run of the day" and the server onl
 | `d1Percent`     | share of them that played again exactly the next day    |
 | `d7Percent`     | share that played on day seven                          |
 | `runs`, `avgDurationMs`, `avgBestTile`, `dailyRuns` | volume and quality        |
+| `campaignRuns`, `campaignWins` | campaign attempts and how many ended in victory |
+| `levels`        | per level: `{ level, runs, wins }` — where the win rate collapses is the level to tune |
 
 The game's `docs/PLAYTEST.md` says what counts as a good sign.
