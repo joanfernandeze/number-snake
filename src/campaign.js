@@ -18,15 +18,15 @@ export const ACTS = ['Learn', 'Pressure', 'Mastery'];
 
 // The star thresholds are starting values; tools/simulate.js --campaign calibrates them (spec §8).
 export const LEVELS = [
-  { id: 1,  act: 1, board: 'open',     speed: 'classic', obstacleEvery: 0,  goal: tile(64),     stars: [eats(24), chain(2)],  matchHint: true, maxTiles: 4 },
-  { id: 2,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: tile(64),     stars: [eats(24), time(75)] },
-  { id: 3,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: chain(3),     stars: [eats(30), tile(64)] },
-  { id: 4,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: tile(128),    stars: [eats(40), chain(3)] },
+  { id: 1,  act: 1, board: 'open',     speed: 'classic', obstacleEvery: 0,  goal: tile(64),     stars: [eats(22), chain(2)],  matchHint: true, maxTiles: 4 },
+  { id: 2,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: tile(64),     stars: [eats(26), time(25)] },
+  { id: 3,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: chain(3),     stars: [eats(12), tile(64)] },
+  { id: 4,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: tile(128),    stars: [eats(44), chain(3)] },
   { id: 5,  act: 2, board: 'lanes',    speed: 'classic', obstacleEvery: 15, goal: tile(64),     stars: [eats(24), time(75)] },
   { id: 6,  act: 2, board: 'lanes',    speed: 'classic', obstacleEvery: 15, goal: survive(90),  stars: [tile(64), tile(128)] },
   { id: 7,  act: 2, board: 'lanes',    speed: 'classic', obstacleEvery: 15, goal: tile(128),    stars: [eats(40), chain(3)] },
   { id: 8,  act: 2, board: 'chambers', speed: 'classic', obstacleEvery: 15, goal: tile(128),    stars: [eats(40), chain(3)] },
-  { id: 9,  act: 3, board: 'chambers', speed: 'frenzy',  obstacleEvery: 10, goal: chain(4),     stars: [eats(40), tile(128)] },
+  { id: 9,  act: 3, board: 'chambers', speed: 'frenzy',  obstacleEvery: 10, goal: chain(4),     stars: [eats(14), tile(128)] },
   { id: 10, act: 3, board: 'chambers', speed: 'frenzy',  obstacleEvery: 10, goal: tile(128),    stars: [eats(36), time(90)] },
   { id: 11, act: 3, board: 'ring',     speed: 'frenzy',  obstacleEvery: 10, goal: survive(120), stars: [tile(64), tile(128)] },
   { id: 12, act: 3, board: 'ring',     speed: 'frenzy',  obstacleEvery: 10, goal: tile(128),    stars: [eats(36), chain(4)] },
