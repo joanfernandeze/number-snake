@@ -46,9 +46,12 @@ function spawnRef(game) {
   return game.cfg.window === 'head' ? game.snake.values[0] : Snake.maxValue(game.snake);
 }
 
-export function createGame(rng, cfg = DIFFICULTIES[DEFAULT_DIFFICULTY]) {
-  const board = Board.createBoard();
-  const start = { x: Math.floor(GRID.cols / 2), y: Math.floor(GRID.rows / 2) };
+// opts.board: a parsed board from boards.js ({ walls, start }); default is the open board with the
+// snake starting in the centre, exactly as before the campaign.
+export function createGame(rng, cfg = DIFFICULTIES[DEFAULT_DIFFICULTY], opts = {}) {
+  const shaped = opts.board || null;
+  const board = Board.createBoard(GRID.cols, GRID.rows, shaped ? new Set(shaped.walls) : new Set());
+  const start = shaped ? { ...shaped.start } : { x: Math.floor(GRID.cols / 2), y: Math.floor(GRID.rows / 2) };
   const snake = Snake.createSnake(START.snakeLength, START.snakeValue, start, START.direction);
   const game = {
     rng, board, snake, cfg,
@@ -60,6 +63,7 @@ export function createGame(rng, cfg = DIFFICULTIES[DEFAULT_DIFFICULTY]) {
     bestTile: Snake.maxValue(snake),
     bestCombo: 0,
     over: false,
+    won: false,       // a campaign goal met: the run ended, but not in death
     lastCause: null,
   };
   Board.refill(board, rng, spawnRef(game), snake.cells, cfg.maxTiles, cfg.decay);
@@ -69,6 +73,15 @@ export function createGame(rng, cfg = DIFFICULTIES[DEFAULT_DIFFICULTY]) {
 // Called on the player's first direction input; until then step() waits.
 export function startRun(game) {
   game.started = true;
+}
+
+// End a run in victory. The caller (the loop, which knows the campaign goal) decides when; the
+// engine only records it, in the same shape as a death so the game-over path is one path.
+export function finish(game) {
+  game.over = true;
+  game.won = true;
+  game.lastCause = { type: 'won', cell: { ...game.snake.cells[0] } };
+  return { over: true, won: true, cause: game.lastCause };
 }
 
 // The interval the loop should actually aim for: the level's curve, stretched while a
@@ -90,6 +103,12 @@ export function step(game) {
   const next = Snake.nextHeadCell(s);
 
   if (Snake.isWall(next, b.cols, b.rows)) {
+    game.over = true;
+    game.lastCause = { type: 'wall', cell: next };
+    return { over: true, cause: game.lastCause, armed };
+  }
+
+  if (Board.wallAt(b, next.x, next.y)) {
     game.over = true;
     game.lastCause = { type: 'wall', cell: next };
     return { over: true, cause: game.lastCause, armed };

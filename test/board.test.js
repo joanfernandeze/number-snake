@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
 import {
   createBoard, tileAt, removeTile, pickValue, spawnTile, refill, spawnObstacle, obstacleAt,
-  armedObstacleAt, armObstacles,
+  armedObstacleAt, armObstacles, wallAt,
 } from '../src/board.js';
 import { OBSTACLE } from '../src/constants.js';
 
@@ -163,4 +163,20 @@ test('an obstacle about to arm under the snake is cancelled instead of killing',
   board.obstacles = [{ x: 2, y: 3, armed: false, warn: 1 }];
   assert.deepEqual(armObstacles(board, [{ x: 2, y: 3 }]), []);
   assert.equal(board.obstacles.length, 0, 'it gives up rather than kill from underneath');
+});
+
+test('walls are stored, found, and never receive tiles or obstacles', () => {
+  const walls = new Set(['1,2', '5,2']);
+  const b = createBoard(7, 11, walls);
+  assert.equal(wallAt(b, 1, 2), true);
+  assert.equal(wallAt(b, 0, 0), false);
+  assert.equal(createBoard(7, 11).walls.size, 0, 'no walls by default');
+  const rng = createRng(7);
+  // Fill the whole board: every free cell gets a tile, the walls stay bare.
+  refill(b, rng, 4, [], 7 * 11, 0.5);
+  assert.equal(b.tiles.length, 7 * 11 - 2);
+  assert.ok(!b.tiles.some(t => walls.has(`${t.x},${t.y}`)));
+  const b2 = createBoard(7, 11, walls);
+  for (let i = 0; i < 200; i++) spawnObstacle(b2, rng, [], null);
+  assert.ok(!b2.obstacles.some(o => walls.has(`${o.x},${o.y}`)));
 });

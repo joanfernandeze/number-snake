@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
 import {
   createGame, step, startRun, targetInterval, smoothInterval, tickDue, nextTickTime, currentTarget,
+  finish,
 } from '../src/game.js';
 import { SPAWN, TIMING, START, DIFFICULTIES, DEFAULT_DIFFICULTY, OBSTACLE, RELIEF } from '../src/constants.js';
+import { parseBoard, BOARDS } from '../src/boards.js';
 
 const UP = { x: 0, y: -1 }, DOWN = { x: 0, y: 1 };
 
@@ -313,4 +315,38 @@ test('relief runs out after its ticks and the speed returns', () => {
   step(g);
   assert.equal(g.relief, 0);
   assert.equal(currentTarget(g), targetInterval(g.eaten, g.cfg));
+});
+
+test('a game on a shaped board starts where the board says and dies on a wall cell', () => {
+  const shaped = parseBoard(['.......', '.......', '.......', '...#...', '.......', '...S...',
+    '.......', '.......', '.......', '.......', '.......']);
+  const g = createGame(createRng(1), DIFFICULTIES.classic, { board: shaped });
+  assert.deepEqual(g.snake.cells[0], { x: 3, y: 5 });
+  assert.equal(g.board.walls.has('3,3'), true);
+  assert.ok(!g.board.tiles.some(t => t.x === 3 && t.y === 3), 'no tile spawned on the wall');
+  startRun(g);
+  // Two steps up: (3,4) is free, (3,3) is the wall.
+  let ev = step(g);
+  assert.equal(ev.over, false);
+  ev = step(g);
+  assert.equal(ev.over, true);
+  assert.equal(ev.cause.type, 'wall');
+  assert.deepEqual(ev.cause.cell, { x: 3, y: 3 });
+});
+
+test('createGame without options is the open board with the centre start, as before', () => {
+  const g = createGame(createRng(1), DIFFICULTIES.classic);
+  assert.deepEqual(g.snake.cells[0], { x: 3, y: 5 });
+  assert.equal(g.board.walls.size, 0);
+  assert.equal(g.won, false);
+});
+
+test('finish ends a run in victory and step refuses to move afterwards', () => {
+  const g = createGame(createRng(2), DIFFICULTIES.classic);
+  startRun(g);
+  const ev = finish(g);
+  assert.equal(g.over, true);
+  assert.equal(g.won, true);
+  assert.deepEqual(ev, { over: true, won: true, cause: { type: 'won', cell: { x: 3, y: 5 } } });
+  assert.deepEqual(step(g), { over: true });
 });

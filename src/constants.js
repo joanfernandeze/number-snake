@@ -93,6 +93,13 @@ export const OBSTACLE_COLORS = {
   edge: 'rgba(239,68,68,0.95)',
 };
 
+// A wall is architecture, not a hazard that arrived: a solid dark block with a lighter edge, no
+// stripes and no red glow. Those two are reserved for obstacles and the frame.
+export const WALL_COLORS = {
+  body: '#2a3352',
+  edge: '#3d4a78',
+};
+
 export const STORAGE_KEY = 'numberSnake.best';
 
 export const INPUT = {
@@ -147,4 +154,9 @@ export const ANALYTICS = {
   endpoint: 'https://number-snake-analytics.projectwardossier.workers.dev/run',
   storageKey: 'numberSnake.device',
   maxDays: 400, // a year of daily play is plenty
+};
+
+// The campaign: twelve levels on shaped boards. Progress is stars per level; unlocking is derived.
+export const CAMPAIGN = {
+  storageKey: 'numberSnake.campaign',
 };

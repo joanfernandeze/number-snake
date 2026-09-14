@@ -1,8 +1,14 @@
 import { GRID, SPAWN, OBSTACLE } from './constants.js';
 import { randInt } from './rng.js';
 
-export function createBoard(cols = GRID.cols, rows = GRID.rows) {
-  return { cols, rows, tiles: [], obstacles: [] }; // tiles: [{x, y, value}], obstacles: [{x, y}]
+// walls: Set<'x,y'> of cells that are part of the board's shape. Lethal like the frame, and
+// nothing ever spawns on them.
+export function createBoard(cols = GRID.cols, rows = GRID.rows, walls = new Set()) {
+  return { cols, rows, tiles: [], obstacles: [], walls }; // tiles: [{x, y, value}], obstacles: [{x, y}]
+}
+
+export function wallAt(board, x, y) {
+  return board.walls.has(`${x},${y}`);
 }
 
 export function tileAt(board, x, y) {
@@ -37,7 +43,7 @@ export function pickValue(rng, maxValue, decay = 0.45, base = SPAWN.baseValue) {
 }
 
 function isOccupied(board, snakeCells, x, y) {
-  if (tileAt(board, x, y) || obstacleAt(board, x, y)) return true;
+  if (wallAt(board, x, y) || tileAt(board, x, y) || obstacleAt(board, x, y)) return true;
   return snakeCells.some(c => c.x === x && c.y === y);
 }
 

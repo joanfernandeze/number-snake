@@ -3,3 +3,4 @@ node_modules/
 Thumbs.db
 analytics/node_modules/
 .wrangler/
+.superpowers/
