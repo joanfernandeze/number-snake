@@ -107,9 +107,7 @@ function drawBridge(ctx, a, b, cell, colorA, colorB) {
 // Its base starts inside the segment body (the segment paints over it) and it is
 // clipped to the board so it never spills over the wall frame. Drawn under the
 // tiles (see draw()), so a tile spawned in the cell behind the tail covers the tip
-// instead of the tip painting over the tile. When the cell it points into is a wall
-// block, the clip shrinks to the tail's own cell so the tip stops at that edge instead
-// of painting over the block (walls are architecture, not something the tail passes).
+// instead of the tip painting over the tile.
 function drawTail(ctx, L, last, snake, board) {
   const d = tailDirection(snake);
   const cell = L.cell, pad = cell * PAD;
@@ -120,14 +118,19 @@ function drawTail(ctx, L, last, snake, board) {
   const bx = cx + d.x * base, by = cy + d.y * base;
   const ax = cx + d.x * (base + len), ay = cy + d.y * (base + len);
   const px = -d.y, py = d.x;
-  const tailCell = snake.cells[snake.cells.length - 1];
-  const pointCell = { x: tailCell.x + d.x, y: tailCell.y + d.y };
-  const blocked = !!(board && board.walls && board.walls.has(`${pointCell.x},${pointCell.y}`));
   ctx.save();
+  // The tip may never paint on a wall block, whatever the slide's phase: clip to the board with
+  // every wall cell punched out (even-odd), so the geometry can stay anchored to the animated
+  // tail position without a per-cell special case.
   ctx.beginPath();
-  if (blocked) ctx.rect(L.ox + tailCell.x * cell, L.oy + tailCell.y * cell, cell, cell);
-  else ctx.rect(L.ox, L.oy, L.cols * cell, L.rows * cell);
-  ctx.clip();
+  ctx.rect(L.ox, L.oy, L.cols * cell, L.rows * cell);
+  if (board && board.walls) {
+    for (const key of board.walls) {
+      const [wx, wy] = key.split(',').map(Number);
+      ctx.rect(L.ox + wx * cell, L.oy + wy * cell, cell, cell);
+    }
+  }
+  ctx.clip('evenodd');
   ctx.fillStyle = colorFor(snake.values[snake.values.length - 1]);
   ctx.beginPath();
   ctx.moveTo(bx + px * half, by + py * half);
