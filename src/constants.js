@@ -126,3 +126,24 @@ export const TELEMETRY = {
 export const UI = {
   copiedNoteMs: 1800, // how long "Copied" stays visible under the stats
 };
+
+// The game's identity, used by the share card. A rename is one line here.
+export const GAME = {
+  name: 'Number Snake',
+  url: 'https://joanfernandeze.github.io/number-snake/',
+};
+
+// The daily challenge: one board for everyone, seeded from the local calendar date, always
+// on Classic so results compare. The first attempt of the day is the one that counts.
+export const DAILY = {
+  epoch: '2026-09-14',          // Daily #1
+  level: 'classic',
+  storageKey: 'numberSnake.daily',
+};
+
+// Retention analytics without identifiers: the device sends only aggregable facts about its
+// own history. An empty endpoint turns sending off entirely.
+export const ANALYTICS = {
+  endpoint: '',
+  storageKey: 'numberSnake.device',
+};
