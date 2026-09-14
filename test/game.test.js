@@ -350,3 +350,18 @@ test('finish ends a run in victory and step refuses to move afterwards', () => {
   assert.deepEqual(ev, { over: true, won: true, cause: { type: 'won', cell: { x: 3, y: 5 } } });
   assert.deepEqual(step(g), { over: true });
 });
+
+test('finish refuses to overwrite a run that already ended in death', () => {
+  const g = createGame(createRng(3), DIFFICULTIES.classic);
+  startRun(g);
+  // Straight up from the centre start with no turns queued: it reaches the frame in a few
+  // ticks and can never hit itself on a straight line, so this ends in a wall death for any seed.
+  for (let i = 0; i < 10 && !g.over; i++) step(g);
+  assert.equal(g.over, true, 'the snake should have run into the frame by now');
+  assert.equal(g.lastCause.type, 'wall');
+  const deathCause = g.lastCause;
+  const ev = finish(g);
+  assert.deepEqual(ev, { over: true, won: false, cause: deathCause });
+  assert.equal(g.won, false, 'a death stays a death');
+  assert.equal(g.lastCause.type, 'wall');
+});

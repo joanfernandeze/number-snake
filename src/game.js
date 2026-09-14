@@ -78,6 +78,7 @@ export function startRun(game) {
 // End a run in victory. The caller (the loop, which knows the campaign goal) decides when; the
 // engine only records it, in the same shape as a death so the game-over path is one path.
 export function finish(game) {
+  if (game.over) return { over: true, won: game.won, cause: game.lastCause }; // already ended: a death stays a death
   game.over = true;
   game.won = true;
   game.lastCause = { type: 'won', cell: { ...game.snake.cells[0] } };

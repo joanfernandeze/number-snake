@@ -87,8 +87,9 @@ const ROWS = {
 
 export const cellKey = (x, y) => `${x},${y}`;
 
-// rows -> { walls: Set<'x,y'>, start: {x, y}, cols, rows }. Throws on a malformed picture; use
-// isValidBoard first when the rows come from anywhere but this file.
+// rows -> { walls: Set<'x,y'>, start: {x, y}, cols, rows }. Throws only on a bad character or the
+// wrong number of starts; a wrong size or an unreachable layout parses without complaint, so run
+// isValidBoard first when the rows come from anywhere but this file's own validated BOARDS.
 export function parseBoard(rows) {
   const walls = new Set();
   let start = null;
@@ -131,8 +132,13 @@ export function isValidBoard(rows) {
   return seen.size === free;
 }
 
-// key -> { key, name, rows (the strings), walls, start, cols }
+// key -> { key, name, rows (the strings), walls, start, cols }. Validated at module load: a
+// shipped board that is the wrong size, has no reachable start, or seals off a pocket throws here
+// instead of shipping a level the player (or a tile spawn) can never actually reach.
 export const BOARDS = Object.fromEntries(Object.entries(ROWS).map(([key, { name, rows }]) => {
+  if (!isValidBoard(rows)) {
+    throw new Error(`board '${key}' is not valid: 7x11, one start, free cell ahead, all cells reachable`);
+  }
   const parsed = parseBoard(rows);
   return [key, { key, name, rows, walls: parsed.walls, start: parsed.start, cols: parsed.cols }];
 }));

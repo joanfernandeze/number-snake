@@ -35,3 +35,17 @@ test('isValidBoard rejects the wrong size, no start, two starts, and an unreacha
   const fenced = ok.map((r, i) => (i === 0 ? '.#.....' : i === 1 ? '#' + r.slice(1) : r));
   assert.equal(isValidBoard(fenced), false, 'sealed pocket');
 });
+
+test('isValidBoard rejects a wall directly ahead of the start, and a start on row 0', () => {
+  // BOARDS.open: row 4 is the cell above the row-5 start, and both start life as '.......'.
+  const aheadWalled = BOARDS.open.rows.map((r, i) => (i === 4 ? '...#...' : r));
+  assert.equal(isValidBoard(aheadWalled), false, 'wall directly ahead of the start');
+  const topStart = BOARDS.open.rows.map((r, i) => (i === 0 ? '...S...' : i === 5 ? '.......' : r));
+  assert.equal(isValidBoard(topStart), false, 'a start on row 0 has no cell above to check');
+});
+
+// BOARDS is a module-level constant built by validating every entry with isValidBoard before
+// parseBoard runs (see src/boards.js); there is no way to hand it a bad picture from here to prove
+// the throw without breaking a shipped board. Verified by hand instead: copy src/boards.js to a
+// scratch file, corrupt one shipped board's rows (wrong width), `node -e` import it, confirm the
+// module throws at load time, then discard the scratch copy — never commit that broken variant.
