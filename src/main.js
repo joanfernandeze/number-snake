@@ -222,6 +222,7 @@ window.numberSnakeWin = () => {
 };
 // Playtest hook: the live game object, for inspection from DevTools (e.g. to force a state and
 // watch the victory path: numberSnakeGame().bestTile = 64).
+// Driving the engine directly from here (Game.step, setDirection) bypasses the loop's own game-over dispatch, so a death caused that way is not reported; use it to inspect or force facts, not to play.
 window.numberSnakeGame = () => game;
 
 function start(opts = {}) {
