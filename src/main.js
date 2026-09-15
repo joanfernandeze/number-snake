@@ -281,6 +281,7 @@ function onGameOver(ev, now) {
     verdict = evaluate(level, facts(now));
     if (verdict.won && recordResult(campaign, level.id, verdict.stars)) saveCampaign(campaign);
   }
+  run.stars = verdict ? verdict.stars : null; // travels with the record so /stats can show what humans earn
   run.verdict = verdict; // the share card reads the stars from here
   paintDaily();
   paintPanel(verdict);

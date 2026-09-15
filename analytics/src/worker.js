@@ -38,10 +38,10 @@ export default {
       try {
         await env.DB.prepare(
           `INSERT INTO runs (day_since, days_played, first_of_day, mode, difficulty, score, best_tile,
-                             best_combo, duration_ms, eaten, first_merge_ms, cause, level)
-           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)`,
+                             best_combo, duration_ms, eaten, first_merge_ms, cause, level, stars)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)`,
         ).bind(r.daySince, r.daysPlayed, r.firstOfDay, r.mode, r.difficulty, r.score, r.bestTile,
-               r.bestCombo, r.durationMs, r.eaten, r.firstMergeMs, r.cause, r.level).run();
+               r.bestCombo, r.durationMs, r.eaten, r.firstMergeMs, r.cause, r.level, r.stars).run();
       } catch { return json({ error: 'server' }, 500, origin); }
       return json({ ok: true }, 200, origin);
     }
@@ -59,7 +59,8 @@ export default {
           one(`SELECT COUNT(*) AS n, AVG(duration_ms) AS ms, AVG(best_tile) AS tile FROM runs`),
           one(`SELECT COUNT(*) AS n FROM runs WHERE mode = 'daily'`),
           one(`SELECT COUNT(*) AS n, SUM(CASE WHEN cause = 'won' THEN 1 ELSE 0 END) AS w FROM runs WHERE mode = 'campaign'`),
-          many(`SELECT level, COUNT(*) AS runs, SUM(CASE WHEN cause = 'won' THEN 1 ELSE 0 END) AS wins
+          many(`SELECT level, COUNT(*) AS runs, SUM(CASE WHEN cause = 'won' THEN 1 ELSE 0 END) AS wins,
+                       SUM(CASE WHEN stars = 3 THEN 1 ELSE 0 END) AS three
                 FROM runs WHERE mode = 'campaign' AND level IS NOT NULL GROUP BY level ORDER BY level`),
         ]);
       } catch { return json({ error: 'server' }, 500, origin); }
@@ -74,7 +75,7 @@ export default {
         dailyRuns: daily.n,
         campaignRuns: campaign.n,
         campaignWins: campaign.w || 0,
-        levels: levels.map(r => ({ level: r.level, runs: r.runs, wins: r.wins || 0 })), // where players stall
+        levels: levels.map(r => ({ level: r.level, runs: r.runs, wins: r.wins || 0, threeStars: r.three || 0 })), // where players stall
       }, 200, origin);
     }
 

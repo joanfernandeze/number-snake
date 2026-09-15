@@ -17,17 +17,18 @@ since its first play, Mth distinct day, first run of the day" and the server onl
    Wrangler redeploys with it.
 7. In the game, set `ANALYTICS.endpoint` in `src/constants.js` to that URL plus `/run` and push.
 
-## Upgrading an existing deployment (once — campaign, 2026-09-14)
+## Upgrading an existing deployment (once — campaign, 2026-09-14/15)
 
-Run the `ALTER TABLE` once; a second run fails with "duplicate column name".
-
-The game now sends campaign runs (`mode: 'campaign'`, `cause: 'won'`, and a `level`). A Worker
-deployed before this rejects them, so redeploy **before** pushing the game:
+The game now sends campaign runs (`mode: 'campaign'`, `cause: 'won'`, a `level`, and the `stars`
+the run earned). A Worker deployed before this rejects them, so redeploy **before** pushing the
+game. Each `ALTER TABLE` runs once; a second run fails with "duplicate column name" — if you
+already added `level`, run only the `stars` line.
 
 1. `npx wrangler d1 execute number-snake-analytics --remote --command "ALTER TABLE runs ADD COLUMN level INTEGER"`
-2. `npm run deploy`
+2. `npx wrangler d1 execute number-snake-analytics --remote --command "ALTER TABLE runs ADD COLUMN stars INTEGER"`
+3. `npm run deploy`
 
-A fresh install gets the column from `schema.sql` and needs neither step.
+A fresh install gets both columns from `schema.sql` and needs only step 3.
 
 ## Read the numbers
 
@@ -40,6 +41,6 @@ A fresh install gets the column from `schema.sql` and needs neither step.
 | `d7Percent`     | share that played on day seven                          |
 | `runs`, `avgDurationMs`, `avgBestTile`, `dailyRuns` | volume and quality        |
 | `campaignRuns`, `campaignWins` | campaign attempts and how many ended in victory |
-| `levels`        | per level: `{ level, runs, wins }` — where the win rate collapses is the level to tune |
+| `levels`        | per level: `{ level, runs, wins, threeStars }` — where the win rate collapses is the level to tune; `threeStars` says whether anyone earns the third star |
 
 The game's `docs/PLAYTEST.md` says what counts as a good sign.

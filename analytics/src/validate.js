@@ -12,12 +12,13 @@ export function validateRun(x) {
   if (!MODES.has(x.mode) || !LEVELS.has(x.difficulty) || !CAUSES.has(x.cause)) return null;
   if (!int(x.score, 0, 1e9) || !int(x.bestTile, 2, 1 << 30) || !int(x.bestCombo, 0, 1000)) return null;
   if (!int(x.durationMs, 0, 86400000) || !int(x.eaten, 0, 100000)) return null;
-  if (!optionalInt(x.firstMergeMs, 0, 86400000) || !optionalInt(x.level, 1, 1000)) return null;
+  if (!optionalInt(x.firstMergeMs, 0, 86400000) || !optionalInt(x.level, 1, 1000) || !optionalInt(x.stars, 0, 3)) return null;
   return {
     daySince: x.daySince, daysPlayed: x.daysPlayed, firstOfDay: x.firstOfDay ? 1 : 0,
     mode: x.mode, difficulty: x.difficulty,
     score: x.score, bestTile: x.bestTile, bestCombo: x.bestCombo, durationMs: x.durationMs, eaten: x.eaten,
     firstMergeMs: x.firstMergeMs ?? null, cause: x.cause,
     level: x.level ?? null, // the campaign level, null outside the campaign
+    stars: x.stars ?? null, // 0-3 for a campaign run
   };
 }

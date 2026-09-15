@@ -127,7 +127,7 @@ test('sendRun falls through to fetch when sendBeacon itself throws', () => {
   }
 });
 
-test('runFacts picks exactly the thirteen fields the Worker accepts, nothing else', () => {
+test('runFacts picks exactly the fourteen fields the Worker accepts, nothing else', () => {
   const run = { session: 's1', t0: 1000, firstMergeMs: 2500, mode: 'daily' };
   const game = { cfg: { key: 'frenzy' }, ticks: 42, eaten: 22, score: 96, bestTile: 32, bestCombo: 2 };
   const ev = { over: true, cause: { type: 'self', cell: { x: 1, y: 1 } } };
@@ -136,7 +136,7 @@ test('runFacts picks exactly the thirteen fields the Worker accepts, nothing els
   const out = runFacts(rec, device);
   assert.deepEqual(Object.keys(out).sort(), [
     'bestCombo', 'bestTile', 'cause', 'daySince', 'daysPlayed', 'difficulty',
-    'durationMs', 'eaten', 'firstMergeMs', 'firstOfDay', 'level', 'mode', 'score',
+    'durationMs', 'eaten', 'firstMergeMs', 'firstOfDay', 'level', 'mode', 'score', 'stars',
   ]);
   assert.equal('session' in out, false);
   assert.equal('endedAt' in out, false);
@@ -146,6 +146,8 @@ test('runFacts picks exactly the thirteen fields the Worker accepts, nothing els
   assert.equal(out.daySince, 3);
   assert.equal(runFacts({ ...rec, level: 7 }, device).level, 7);
   assert.equal(runFacts({ ...rec, level: undefined }, device).level, null);
+  assert.equal(runFacts({ ...rec, stars: 3 }, device).stars, 3);
+  assert.equal(runFacts({ ...rec, stars: undefined }, device).stars, null);
 });
 
 test('runFacts turns a missing firstMergeMs into null', () => {
@@ -165,4 +167,5 @@ test('runFacts output satisfies the Worker validator', () => {
   const out = runFacts(rec, { daySince: 0, daysPlayed: 1, firstOfDay: true });
   assert.notEqual(validateRun(out), null);
   assert.ok(validateRun(runFacts({ ...rec, mode: 'campaign', cause: 'won', level: 7 }, { daySince: 0, daysPlayed: 1, firstOfDay: true })), 'a won campaign run is accepted');
+  assert.ok(validateRun(runFacts({ ...rec, mode: 'campaign', cause: 'won', level: 7, stars: 3 }, { daySince: 0, daysPlayed: 1, firstOfDay: true })), 'a three-star win is accepted');
 });

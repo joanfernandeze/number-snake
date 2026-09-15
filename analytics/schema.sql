@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS runs (
   eaten INTEGER NOT NULL,
   first_merge_ms INTEGER,
   level INTEGER,
+  stars INTEGER,
   cause TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS runs_retention ON runs (day_since, first_of_day);
