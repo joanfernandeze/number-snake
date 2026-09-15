@@ -16,7 +16,8 @@ const time = (value) => ({ type: 'time', value });
 
 export const ACTS = ['Learn', 'Pressure', 'Mastery'];
 
-// The star thresholds are starting values; tools/simulate.js --campaign calibrates them (spec §8).
+// Goals and tile/chain stars are design — a doubling ladder per act, capped at 256; the eats/time
+// values are set by tools/simulate.js --campaign (spec 2026-09-15 §3).
 export const LEVELS = [
   { id: 1,  act: 1, board: 'open',     speed: 'classic', obstacleEvery: 0,  goal: tile(64),     stars: [eats(18), chain(3)],  matchHint: true, maxTiles: 4 },
   { id: 2,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: tile(128),    stars: [eats(24), time(45)] },

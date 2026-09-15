@@ -178,6 +178,8 @@ function runLevel(seed, level, maxTicks = 8000) {
 
 const pctile = (sorted, p) => sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] : null;
 
+// p20 (eats and secs) prints for information only — no threshold is set from it any more; every
+// eats/time star comes from p50 (spec 2026-09-15 §3).
 function summarizeLevel(level) {
   const rows = [];
   for (let i = 0; i < RUNS; i++) rows.push(runLevel(2000 + i, level));
@@ -228,7 +230,7 @@ function summarize(label, policy, cfg) {
 
 if (CAMPAIGN) {
   console.log(`Number Snake simulator — campaign, ${RUNS} attempts per level, greedy policy`);
-  console.log('Targets (spec §8): among wins ★★ ≈ 50%, ★★★ ≈ 20%; win rate ≥ 10% on acts 1-2, ≥ 3% on act 3.');
+  console.log('Goals and tile/chain stars are design (spec 2026-09-15 §3); the simulator sets eats (p50 of eats among wins, up to 2) and time (p50 s × 1.4, up to 5). Win and hit rates are informational.');
   console.log(' #  board         goal           win%   ★★%   ★★★%  eats p50/p20   secs p50/p20   tile≥64/128/256   chain≥3/4/5   causes');
   for (const level of CAMPAIGN_LEVELS) summarizeLevel(level);
 } else {
