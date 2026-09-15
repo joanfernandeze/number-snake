@@ -383,3 +383,9 @@ test('every difficulty has a spawn window, and Chill\'s is the narrowest', () =>
   assert.ok(DIFFICULTIES.chill.span < DIFFICULTIES.classic.span);
   assert.equal(DIFFICULTIES.frenzy.span, DIFFICULTIES.classic.span);
 });
+
+test('every difficulty keeps its spawn decay strictly inside (0, 1): low end heaviest, top still reachable', () => {
+  for (const cfg of Object.values(DIFFICULTIES)) {
+    assert.ok(cfg.decay > 0 && cfg.decay < 1, `${cfg.name} decay ${cfg.decay}`);
+  }
+});
