@@ -189,12 +189,16 @@ function summarizeLevel(level) {
   const causes = {};
   for (const r of rows) causes[r.cause] = (causes[r.cause] || 0) + 1;
   const fmt = (v) => (v === null ? '  —' : String(Math.round(v)).padStart(3));
+  const hit = (pred) => (wins.length ? Math.round(100 * wins.filter(pred).length / wins.length) : null);
+  const cand = `  tile≥64/128/256 ${fmt(hit(r => r.bestTile >= 64))}/${fmt(hit(r => r.bestTile >= 128))}/${fmt(hit(r => r.bestTile >= 256))}%`
+    + `  chain≥3/4/5 ${fmt(hit(r => r.bestCombo >= 3))}/${fmt(hit(r => r.bestCombo >= 4))}/${fmt(hit(r => r.bestCombo >= 5))}%`;
   console.log(
     `${String(level.id).padStart(2)}  ${boardFor(level).name.padEnd(13)} ${describe(level.goal).padEnd(14)}`
     + ` win ${String(pct(wins.length)).padStart(3)}%`
     + `  ★★ ${fmt(winPct(wins.filter(r => r.checks[1]).length))}%  ★★★ ${fmt(winPct(wins.filter(r => r.checks[2]).length))}%`
     + `  eats p50/p20 ${fmt(pctile(eats, 0.5))}/${fmt(pctile(eats, 0.2))}`
     + `  secs p50/p20 ${fmt(pctile(secs, 0.5))}/${fmt(pctile(secs, 0.2))}`
+    + cand
     + `  ${JSON.stringify(causes)}`,
   );
 }
@@ -225,7 +229,7 @@ function summarize(label, policy, cfg) {
 if (CAMPAIGN) {
   console.log(`Number Snake simulator — campaign, ${RUNS} attempts per level, greedy policy`);
   console.log('Targets (spec §8): among wins ★★ ≈ 50%, ★★★ ≈ 20%; win rate ≥ 10% on acts 1-2, ≥ 3% on act 3.');
-  console.log(' #  board         goal           win%   ★★%   ★★★%  eats p50/p20   secs p50/p20   causes');
+  console.log(' #  board         goal           win%   ★★%   ★★★%  eats p50/p20   secs p50/p20   tile≥64/128/256   chain≥3/4/5   causes');
   for (const level of CAMPAIGN_LEVELS) summarizeLevel(level);
 } else {
   console.log(`Number Snake simulator — runs=${RUNS} level(s)=${LEVELS_ARG.join(', ')}${NO_OBSTACLES ? ' (obstacles off)' : ''}`);
