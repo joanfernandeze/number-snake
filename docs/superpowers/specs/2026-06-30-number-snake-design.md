@@ -99,6 +99,9 @@ would stall (a `64` head can never match a `4`). Therefore:
 - Tiles spawn only on **empty cells** (not on the snake, not on another tile).
 - The spawn window, tile count, and value weights all live in `constants.js`.
 
+**2026-09-15:** the window is now the top `span` powers of two of the biggest piece with a
+flatter decay — see `2026-09-15-spawn-window-and-retune-design.md`.
+
 ---
 
 ## 6. Merge rule (correctness-critical)

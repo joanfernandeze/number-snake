@@ -1,4 +1,4 @@
-# Number Snake — Playtest guide (v0.3 · campaign)
+# Number Snake — Playtest guide (v0.3 · campaign · spawn window)
 
 **Play it:** https://joanfernandeze.github.io/number-snake/ — GitHub Pages, redeploys a minute or two after each push to `main`. Source: https://github.com/joanfernandeze/number-snake
 
@@ -6,8 +6,10 @@
 Spec: `docs/superpowers/specs/2026-06-30-number-snake-design.md` (§2 targets).
 What changed for this pass: `docs/superpowers/plans/2026-09-08-feel-pass.md`,
 `docs/superpowers/plans/2026-09-14-retention-and-analytics.md`,
-`docs/superpowers/plans/2026-09-14-campaign.md` and the spec
-`docs/superpowers/specs/2026-09-14-campaign-design.md`.
+`docs/superpowers/plans/2026-09-14-campaign.md`, the spec
+`docs/superpowers/specs/2026-09-14-campaign-design.md`, and the spawn-window retune
+`docs/superpowers/specs/2026-09-15-spawn-window-and-retune-design.md` /
+`docs/superpowers/plans/2026-09-15-spawn-window-and-retune.md`.
 
 ## Run it
 - From this folder: `python -m http.server 8765` → open `http://localhost:8765/`.
@@ -64,12 +66,13 @@ first screen is the campaign map, not this mode directly; see "The campaign" bel
 | Half-life (tiles eaten)    | 20     | 14      | 10     |
 | Tiles on the board         | 4      | 3       | 2      |
 | Spawn window               | `head` | `max`   | `max`  |
-| Low-value bias (decay)     | 0.55   | 0.45    | 0.35   |
+| Window width (span)        | 3      | 4       | 4      |
+| Low-end weight (decay)     | 0.9    | 0.8     | 0.65   |
 | An obstacle every … tiles  | 20     | 10      | 10     |
 
 **The ramp keys off tiles eaten, not score.** Score arrives late and in lumps, so a score-keyed
 ramp put the whole speed climb after the run was effectively over; five rounds of hand-tuning
-could not fix that. A run eats about 45 tiles, and eating grows steadily with time played, so the
+could not fix that. A run eats about 58 tiles, and eating grows steadily with time played, so the
 climb is now spread across the run.
 
 **Obstacles** are permanent hazard-striped blocks that land every few tiles eaten, up to eight per
@@ -78,6 +81,34 @@ and avoid lining up beside each other, so they cannot materialise in your face o
 in half. Chill keeps its cadence at 20 because its runs are long; Frenzy deliberately keeps
 Classic's 10, because at every 7 the obstacles flattened its climb from a median tile of 64 to 32,
 and a hard level should make the player fail rather than deny them the climb.
+
+## How tiles appear (2026-09-15)
+
+A new tile's value is drawn from the top `span` powers of two ending at the snake's biggest piece,
+weighted toward the low end by `decay^i` (`i = 0` at the bottom of the window) — so as the pieces
+you carry get bigger, the small tiles stop appearing. With a 32 on the snake no 2s spawn; with a 64
+no 4s; with a 128 no 8s.
+
+| Biggest piece | Window (span 4) |
+| ------------- | ---------------- |
+| 2 … 16        | everything from 2 up (nothing is cut yet) |
+| 32            | 4, 8, 16, 32 |
+| 64            | 8, 16, 32, 64 |
+| 128           | 16, 32, 64, 128 |
+
+Knobs per difficulty (`DIFFICULTIES[k].span` / `.decay`): Chill `span 3, decay 0.9` (and it keeps
+its `head` window — values never above the head); Classic `span 4, decay 0.8`; Frenzy `span 4,
+decay 0.65`. With a 64 on the snake and Classic, 8/16/32/64 spawn at ≈ 34/27/22/17 %.
+
+**Why it plays well.** The bottom of the window is what a player most likely holds after eating
+the wrong tile — head 8 behind a 64 — and 8s are now the most common tile, so the ladder 8 → 16 →
+32 → 64 is fast and ends on the 64 already carried. Mistakes cost eats, not the run. Eating a tile
+**bigger** than the head still buries the smaller one for good — that trap stays, and it is more
+frequent now that big tiles are common.
+
+**Endless medians for the greedy bot** (300 runs each, `node tools/simulate.js --runs=300
+--level=<k>`): Classic 512, Frenzy 128, Chill 256. The bot path-finds and always takes the match,
+so a human sits one or two rungs lower on the same board.
 
 ## Sound, teaching, and the cascade reward
 
@@ -132,7 +163,7 @@ remove a date.
 The game now opens on a **map**: three acts — Learn, Pressure, Mastery — of four levels each, plus
 the unchanged **Endless** and **Daily** one tap away (`Play level N ▸`, `Endless`, `Play Daily #N`).
 Picking a level shows a **goal card** over the board (`Level 5 · The lanes`, the goal in large type
-e.g. `Reach 64`, the two extra-star conditions as `★★ …` / `★★★ …`, and `Swipe to start`) that lets
+e.g. `Reach 128`, the two extra-star conditions as `★★ …` / `★★★ …`, and `Swipe to start`) that lets
 gestures through, so the first swipe or arrow key dismisses it and starts the run. During a
 campaign run the HUD's right-hand stat becomes the goal (`REACH 64` / `CHAIN ×3` / `EAT 12/30`)
 instead of the best tile. Winning stops the snake at once — no death flash, no shake, a short
@@ -154,22 +185,23 @@ award the second and third star:
 | `eats ≤ E`    | at most E tiles eaten so far (`E tiles or fewer`)      |
 | `time ≤ T`    | at most T seconds have passed (`Under T s`)            |
 
-The twelve levels, as shipped (`src/campaign.js`, `LEVELS`):
+The twelve levels, as shipped (`src/campaign.js`, `LEVELS`), recalibrated 2026-09-15 as a doubling
+ladder per act (64 → 128 → 256, capped at 256):
 
 | #  | Act      | Board        | Goal         | ★★                 | ★★★         | Speed   | Obstacles |
 | -- | -------- | ------------ | ------------ | -------------------- | ------------- | ------- | --------- |
-| 1  | Learn    | Open         | Reach 64     | 24 tiles or fewer     | Chain ×2      | Classic | none      |
-| 2  | Learn    | The pillars  | Reach 64     | 28 tiles or fewer     | Under 45 s    | Classic | none      |
-| 3  | Learn    | The pillars  | Chain ×3     | 12 tiles or fewer     | Reach 64      | Classic | none      |
-| 4  | Learn    | The pillars  | Reach 128    | 46 tiles or fewer     | Chain ×4      | Classic | none      |
-| 5  | Pressure | The lanes    | Reach 64     | 26 tiles or fewer     | Under 45 s    | Classic | every 15  |
-| 6  | Pressure | The lanes    | Eat 30 tiles | Reach 64              | Reach 128     | Classic | every 15  |
-| 7  | Pressure | The lanes    | Reach 128    | 40 tiles or fewer     | Chain ×4      | Classic | every 20  |
-| 8  | Pressure | The chambers | Reach 128    | 40 tiles or fewer     | Chain ×4      | Classic | every 15  |
-| 9  | Mastery  | The chambers | Chain ×4     | 20 tiles or fewer     | Reach 128     | Frenzy  | every 10  |
-| 10 | Mastery  | The chambers | Reach 128    | 36 tiles or fewer     | Under 90 s    | Frenzy  | every 10  |
-| 11 | Mastery  | The ring     | Eat 40 tiles | Reach 64              | Reach 128     | Frenzy  | every 10  |
-| 12 | Mastery  | The ring     | Reach 128    | 36 tiles or fewer     | Chain ×4      | Frenzy  | every 10  |
+| 1  | Learn    | Open         | Reach 64     | 18 tiles or fewer     | Chain ×3      | Classic | none      |
+| 2  | Learn    | The pillars  | Reach 128    | 24 tiles or fewer     | Under 45 s    | Classic | none      |
+| 3  | Learn    | The pillars  | Chain ×3     | 14 tiles or fewer     | Reach 128     | Classic | none      |
+| 4  | Learn    | The pillars  | Reach 256    | 30 tiles or fewer     | Chain ×3      | Classic | none      |
+| 5  | Pressure | The lanes    | Reach 128    | 24 tiles or fewer     | Under 50 s    | Classic | every 15  |
+| 6  | Pressure | The lanes    | Eat 40 tiles | Reach 128              | Chain ×3      | Classic | every 15  |
+| 7  | Pressure | The lanes    | Chain ×4     | 26 tiles or fewer     | Reach 128     | Classic | every 20  |
+| 8  | Pressure | The chambers | Reach 256    | 26 tiles or fewer     | Chain ×3      | Classic | every 15  |
+| 9  | Mastery  | The chambers | Chain ×4     | 16 tiles or fewer     | Reach 128     | Frenzy  | every 10  |
+| 10 | Mastery  | The chambers | Reach 256    | 26 tiles or fewer     | Under 40 s    | Frenzy  | every 10  |
+| 11 | Mastery  | The ring     | Eat 40 tiles | Reach 128              | Chain ×3      | Frenzy  | every 15  |
+| 12 | Mastery  | The ring     | Reach 256    | 28 tiles or fewer     | Chain ×4      | Frenzy  | every 10  |
 
 The five boards (`src/boards.js`):
 
@@ -188,8 +220,10 @@ attempt uses a fresh random seed**, so a level cannot be memorised spawn by spaw
 **What to watch in a tester:** which level they stall on; whether they retry a failed level or
 leave for the map; whether they ever come back to replay a cleared level for its missing stars;
 whether they read the goal card or swiped it away unread; whether a wall death feels as fair as an
-obstacle or self death; and, if they get there, whether the finale (level 12: The ring at Frenzy
-speed) reads as hard-but-possible rather than a wall.
+obstacle or self death; whether they understand that the small tiles have stopped coming and the
+number they carry is what spawns; whether they discover the cascade (build `2 · 4 · 8 · 16`, eat a
+2); and, if they get there, whether the finale (level 12: The ring at Frenzy speed) reads as
+hard-but-possible rather than a wall.
 
 **Testing shortcuts:** reset progress with `localStorage.removeItem('numberSnake.campaign')`; jump
 ahead by setting `localStorage['numberSnake.campaign'] = '{"stars":{"1":1,"2":1,"3":1}}'` and
@@ -227,11 +261,12 @@ URL — see `analytics/README.md` for the deploy steps (not repeated here).
 | `d7Percent`                                         | share that played on day seven                     |
 | `runs`, `avgDurationMs`, `avgBestTile`, `dailyRuns` | volume and quality                                 |
 | `campaignRuns`, `campaignWins`                      | campaign attempts and how many ended in victory    |
-| `levels`                                            | per level `{ level, runs, wins }` — the level whose win rate collapses is the one to tune |
+| `levels`                                            | per level `{ level, runs, wins, threeStars }` — the level whose win rate collapses is the one to tune; `threeStars` says whether anyone earns the third star |
 
-These three campaign fields only appear once the Worker has been upgraded for the campaign — see
-`analytics/README.md`, "Upgrading an existing deployment"; a Worker still on the old schema simply
-omits them.
+These campaign fields only appear once the Worker has run both `ALTER TABLE`s (`level` and
+`stars`) and redeployed — see `analytics/README.md`, "Upgrading an existing deployment". A Worker
+still fully on the old code and schema simply omits them; one redeployed with the new code but not
+yet both `ALTER TABLE`s answers 500 to every `/run` and `/stats` instead, so run the ALTERs first.
 
 **Success criteria** (spec §6, after one week with a handful of testers):
 
@@ -257,6 +292,8 @@ that level. Everything else is shared.
 | The late game never gets frantic              | lower `tickFloorMs`                                            |
 | A change of speed reads as a jolt             | raise `TIMING.smoothTauMs` (1200)                              |
 | Climb stalls: never sees the value it needs   | set `window` to `'head'`, or raise `decay`                     |
+| The spawn window feels too narrow or too wide | raise/lower `span` (`DIFFICULTIES[k].span`)                    |
+| The low end doesn't dominate enough, or too much | raise/lower `decay` (`DIFFICULTIES[k].decay`); check with `node tools/simulate.js --runs=300 --level=classic` — the greedy median should sit around 256–512 |
 | Too few routing choices                       | raise `maxTiles`                                               |
 | Obstacles dominate the deaths                 | raise `obstacleEvery`, or lower `OBSTACLE.max` (8)             |
 | An obstacle appeared unfairly close           | raise `OBSTACLE.minHeadDist` (4)                               |
@@ -273,8 +310,9 @@ that level. Everything else is shared.
 | A past daily must never renumber              | never change `DAILY.epoch` once players exist                 |
 | Retention sending should stay off             | leave `ANALYTICS.endpoint` empty (default)                     |
 | Device history grows too large in storage     | lower `ANALYTICS.maxDays` (400)                                |
-| A level's stars feel too easy or too hard      | `LEVELS[n].stars` (tune with the simulator)                    |
-| A level's goal, board, speed or obstacle cadence needs to change | `LEVELS[n].goal` / `board` / `speed` / `obstacleEvery` (a design change — change it with a reason and re-run the simulator) |
+| A level's `eats`/`time` star feels too easy or too hard | `LEVELS[n].stars` (re-run `node tools/simulate.js --campaign=N` and take the new p50) |
+| A level's `tile`/`chain` star feels too easy or too hard | `LEVELS[n].stars` (a design call, not simulator-set — see the doubling ladder in the 2026-09-15 spec) |
+| A level's goal, board, speed or obstacle cadence needs to change | `LEVELS[n].goal` / `board` / `speed` / `obstacleEvery` (a design change — change it with a reason, then re-run the simulator to reset its `eats`/`time` stars) |
 | The victory panel arrives too soon or too late | `UI.winPanelDelayMs`                                            |
 | The victory chord should sit at a different pitch | `SOUND.winHz`                                              |
 | Walls should read as more or less distinct from obstacles | `WALL_COLORS`                                       |
@@ -300,38 +338,47 @@ is the balance we want: no single way to die dominates. Note the simulated playe
 cell ahead, so it walks into obstacles far more than a human should; treat its obstacle share as a
 ceiling rather than a prediction.
 
-### Campaign calibration (2026-09-14, 300 greedy-bot attempts per level)
+Superseded by the 2026-09-15 spawn window (median best tile climbs a lot on all three difficulties
+now) — see "How tiles appear" above for the current Endless medians (Classic 512, Frenzy 128,
+Chill 256).
+
+### Campaign calibration (2026-09-15, 300 greedy-bot attempts per level)
 
 `node tools/simulate.js --campaign --runs=300` plays every level 300 times with the greedy
-"plays for matches" policy — which now path-finds around walls by breadth-first search — and
-prints, per level, the win rate and, among wins, how often ★★ and ★★★ held (`node
-tools/simulate.js --campaign=7` runs one level alone). Thresholds are tuned so that among the
-bot's wins **★★ holds in roughly half and ★★★ in roughly a fifth**, and the bot wins at least one
-attempt in ten on acts 1–2 and one in thirty on act 3 (it is a much weaker player than a human who
-has reached that level; if it cannot win a level at all, the level is too hard); any `time`
-threshold is scaled ×1.4 before rounding, because the bot moves the instant a path is clear and a
-human takes a beat to look:
+"plays for matches" policy — which path-finds around walls by breadth-first search — and prints,
+per level, the win rate and, among wins, how often ★★ and ★★★ held (`node
+tools/simulate.js --campaign=7` runs one level alone).
+
+Goals, boards, speeds, obstacle cadence and every `tile`/`chain` star are **design**, chosen as a
+doubling ladder per act (64 → 128 → 256, capped at 256 because the bot's Endless median tile — 512
+on Classic — sits one or two rungs above a human's); ★★ is always the easier star, ★★★ the harder.
+Only the `eats` and `time` stars come from the simulator: `eats` is the p50 of eats among the
+bot's wins, up to the nearest 2; `time` is the p50 seconds among the bot's wins × 1.4 (the bot
+moves the instant a path is clear; a human takes a beat to look), up to the nearest 5. The win rate
+and ★★/★★★ hit rates below are reported, not targeted: the bot path-finds and always takes the
+matching tile, a human does not, so a win-rate band measured against the bot fit the bot's play,
+not a person's — that is why goals stopped being tuned to it.
 
 ```
- #  board         goal           win%   ★★%   ★★★%  eats p50/p20   secs p50/p20
- 1  Open          Reach 64        93     52    100     24/19          24/20
- 2  The pillars   Reach 64        82     52     85     28/20          31/23
- 3  The pillars   Chain ×3        93     51     18     12/7           16/9
- 4  The pillars   Reach 128       20     51     69     46/37          47/39
- 5  The lanes     Reach 64        39     53     81     25/19          32/25
- 6  The lanes     Eat 30 tiles    68     33      2     30/30          38/34
- 7  The lanes     Reach 128        4     46     77     41/29          45/36   (obstacles eased to every 20)
- 8  The chambers  Reach 128       10     52     79     40/31          44/33
- 9  The chambers  Chain ×4        43     53      2     19/13          20/15
-10  The chambers  Reach 128        2     20    100     44/41          40/34
-11  The ring      Eat 40 tiles    18     47      2     40/40          39/36
-12  The ring      Reach 128        1     50    100     45/33          41/36
+ #  board         goal            win%   ★★%   ★★★%
+ 1  Open          Reach 64         99     62     42
+ 2  The pillars   Reach 128        91     52     99
+ 3  The pillars   Chain ×3         59     54     34
+ 4  The pillars   Reach 256        82     58     53
+ 5  The lanes     Reach 128        60     54     98
+ 6  The lanes     Eat 40 tiles     26     91     63
+ 7  The lanes     Chain ×4          6     53     35
+ 8  The chambers  Reach 256        40     55     56
+ 9  The chambers  Chain ×4          7     55     10
+10  The chambers  Reach 256        20     57    100
+11  The ring      Eat 40 tiles     19     78     71
+12  The ring      Reach 256        17     62     16
 ```
 
-Levels 7, 10 and 12 are hard even for a good player; the plan is to read each level's win rate from
-`/stats` after a week and tune that level, not the whole act. A `survive T s` goal was tried and
-dropped: the bot won it by circling without eating, since nothing in the game ramps unless the
-snake eats.
+Levels 7 and 9 (`Chain ×4`) sit under 10 % win rate for the bot because it never plans a cascade; a
+human who builds the ascending body `2 · 4 · 8 · 16` and detonates it with a 2 can clear either. A
+`survive T s` goal was tried and dropped: the bot won it by circling without eating, since nothing
+in the game ramps unless the snake eats.
 
 ## Decision gate
 - D1 ≥ 30 % and the daily is played on a second day → the loop is a habit; the next pass can look
