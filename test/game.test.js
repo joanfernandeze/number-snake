@@ -365,3 +365,21 @@ test('finish refuses to overwrite a run that already ended in death', () => {
   assert.equal(g.won, false, 'a death stays a death');
   assert.equal(g.lastCause.type, 'wall');
 });
+
+test('the game refills with the level\'s window: a span of one spawns only the biggest piece', () => {
+  const g = createGame(createRng(3), { ...DIFFICULTIES.classic, span: 1 });
+  g.snake.values[0] = 64;
+  g.board.tiles = [{ x: 3, y: 4, value: 64 }]; // straight ahead of the centre start, heading up
+  startRun(g);
+  const ev = step(g);
+  assert.equal(ev.ate, true);
+  assert.equal(g.bestTile, 128);
+  assert.equal(g.board.tiles.length, DIFFICULTIES.classic.maxTiles);
+  assert.ok(g.board.tiles.every(t => t.value === 128), JSON.stringify(g.board.tiles));
+});
+
+test('every difficulty has a spawn window, and Chill\'s is the narrowest', () => {
+  for (const cfg of Object.values(DIFFICULTIES)) assert.ok(Number.isInteger(cfg.span) && cfg.span >= 1, `${cfg.name} span`);
+  assert.ok(DIFFICULTIES.chill.span < DIFFICULTIES.classic.span);
+  assert.equal(DIFFICULTIES.frenzy.span, DIFFICULTIES.classic.span);
+});

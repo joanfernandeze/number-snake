@@ -23,23 +23,26 @@ export function removeTile(board, x, y) {
   board.tiles = board.tiles.filter(t => !(t.x === x && t.y === y));
 }
 
-// Pick a tile value: a power of two from base up to maxValue, weighted toward
-// the low end by `decay` so 2s/4s dominate but high matches still appear.
-export function pickValue(rng, maxValue, decay = 0.45, base = SPAWN.baseValue) {
+// Pick a tile value from the top `span` powers of two ending at maxValue, weighted toward the
+// low end by `decay`. As the biggest piece grows, the smallest values stop appearing: with a 32
+// on the snake no 2s spawn, with a 64 no 4s. The bottom of the window is what a player most
+// likely holds after eating the wrong tile, so it is also the rung that climbs back fastest.
+export function pickValue(rng, maxValue, decay = SPAWN.decay, base = SPAWN.baseValue, span = SPAWN.span) {
   const maxExp = Math.max(1, Math.round(Math.log2(maxValue / base)) + 1);
+  const minExp = Math.max(1, maxExp - span + 1);
   const weights = [];
   let total = 0;
-  for (let e = 1; e <= maxExp; e++) {
-    const w = Math.pow(decay, e - 1);
+  for (let e = minExp; e <= maxExp; e++) {
+    const w = Math.pow(decay, e - minExp);
     weights.push(w);
     total += w;
   }
   let r = rng() * total;
-  for (let e = 1; e <= maxExp; e++) {
-    r -= weights[e - 1];
-    if (r <= 0) return base * Math.pow(2, e - 1);
+  for (let i = 0; i < weights.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return base * Math.pow(2, minExp - 1 + i);
   }
-  return base;
+  return base * Math.pow(2, maxExp - 1);
 }
 
 function isOccupied(board, snakeCells, x, y) {
@@ -48,7 +51,7 @@ function isOccupied(board, snakeCells, x, y) {
 }
 
 // Spawn one tile on a random empty cell. Returns the tile, or null if the board is full.
-export function spawnTile(board, rng, maxValue, snakeCells, decay) {
+export function spawnTile(board, rng, maxValue, snakeCells, decay, span) {
   const empties = [];
   for (let y = 0; y < board.rows; y++) {
     for (let x = 0; x < board.cols; x++) {
@@ -57,15 +60,15 @@ export function spawnTile(board, rng, maxValue, snakeCells, decay) {
   }
   if (empties.length === 0) return null;
   const cell = empties[randInt(rng, empties.length)];
-  const tile = { x: cell.x, y: cell.y, value: pickValue(rng, maxValue, decay) };
+  const tile = { x: cell.x, y: cell.y, value: pickValue(rng, maxValue, decay, SPAWN.baseValue, span) };
   board.tiles.push(tile);
   return tile;
 }
 
-// The tile count and the low-value bias both come from the level, so the caller passes them.
-export function refill(board, rng, maxValue, snakeCells, maxTiles, decay) {
+// The tile count, the low-value bias and the window all come from the level, so the caller passes them.
+export function refill(board, rng, maxValue, snakeCells, maxTiles, decay, span) {
   while (board.tiles.length < maxTiles) {
-    if (!spawnTile(board, rng, maxValue, snakeCells, decay)) break;
+    if (!spawnTile(board, rng, maxValue, snakeCells, decay, span)) break;
   }
 }
 

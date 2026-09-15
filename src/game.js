@@ -66,7 +66,7 @@ export function createGame(rng, cfg = DIFFICULTIES[DEFAULT_DIFFICULTY], opts = {
     won: false,       // a campaign goal met: the run ended, but not in death
     lastCause: null,
   };
-  Board.refill(board, rng, spawnRef(game), snake.cells, cfg.maxTiles, cfg.decay);
+  Board.refill(board, rng, spawnRef(game), snake.cells, cfg.maxTiles, cfg.decay, cfg.span);
   return game;
 }
 
@@ -147,7 +147,7 @@ export function step(game) {
         && b.obstacles.length < OBSTACLE.max) {
       obstacle = Board.spawnObstacle(b, game.rng, s.cells, s.cells[0]);
     }
-    Board.refill(b, game.rng, spawnRef(game), s.cells, game.cfg.maxTiles, game.cfg.decay);
+    Board.refill(b, game.rng, spawnRef(game), s.cells, game.cfg.maxTiles, game.cfg.decay, game.cfg.span);
     return { over: false, ate: true, merges: r.merges, gained: r.gained, cell: next, obstacle, armed, relief };
   }
 

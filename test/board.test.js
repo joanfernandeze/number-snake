@@ -36,13 +36,6 @@ test('pickValue with maxValue 2 only ever returns 2', () => {
   for (let i = 0; i < 50; i++) assert.equal(pickValue(r, 2), 2);
 });
 
-test('pickValue is weighted toward low values', () => {
-  const r = createRng(123);
-  let twos = 0, total = 1000;
-  for (let i = 0; i < total; i++) if (pickValue(r, 64) === 2) twos++;
-  assert.ok(twos / total > 0.4, `expected lots of 2s, got ${twos}/${total}`);
-});
-
 test('spawnTile never lands on the snake or another tile', () => {
   const r = createRng(7);
   const b = createBoard(3, 3);
@@ -179,4 +172,38 @@ test('walls are stored, found, and never receive tiles or obstacles', () => {
   const b2 = createBoard(7, 11, walls);
   for (let i = 0; i < 200; i++) spawnObstacle(b2, rng, [], null);
   assert.ok(!b2.obstacles.some(o => walls.has(`${o.x},${o.y}`)));
+});
+
+test('the spawn window is the top `span` powers of two: small values stop appearing as the max grows', () => {
+  const seen = (max, span) => {
+    const r = createRng(11);
+    const s = new Set();
+    for (let i = 0; i < 600; i++) s.add(pickValue(r, max, 0.8, 2, span));
+    return [...s].sort((a, b) => a - b);
+  };
+  assert.deepEqual(seen(16, 4), [2, 4, 8, 16], 'below 32 nothing is cut');
+  assert.deepEqual(seen(32, 4), [4, 8, 16, 32], 'with a 32 on the snake the 2s are gone');
+  assert.deepEqual(seen(64, 4), [8, 16, 32, 64], 'with a 64 the 4s are gone');
+  assert.deepEqual(seen(128, 4), [16, 32, 64, 128], 'with a 128 the 8s are gone');
+  assert.deepEqual(seen(64, 3), [16, 32, 64], 'a narrower window cuts deeper');
+  assert.deepEqual(seen(2, 4), [2]);
+});
+
+test('within the window the low end is most common and the top still shows up often', () => {
+  const r = createRng(123);
+  const counts = {};
+  for (let i = 0; i < 2000; i++) { const v = pickValue(r, 64, 0.8, 2, 4); counts[v] = (counts[v] || 0) + 1; }
+  assert.ok(counts[8] > counts[16] && counts[16] > counts[32] && counts[32] > counts[64], JSON.stringify(counts));
+  assert.ok(counts[64] / 2000 > 0.12, `a 64 should appear in well over a tenth of spawns: ${counts[64]}`);
+  assert.equal(counts[2], undefined);
+  assert.equal(counts[4], undefined);
+});
+
+test('refill and spawnTile pass the window through', () => {
+  const b = createBoard(7, 11);
+  refill(b, createRng(3), 64, [], 10, 0.8, 1);
+  assert.ok(b.tiles.length === 10 && b.tiles.every(t => t.value === 64), 'span 1 spawns only the biggest value');
+  const b2 = createBoard(7, 11);
+  const t = spawnTile(b2, createRng(4), 64, [], 0.8, 2);
+  assert.ok([32, 64].includes(t.value), `span 2 spawns 32 or 64, got ${t.value}`);
 });
