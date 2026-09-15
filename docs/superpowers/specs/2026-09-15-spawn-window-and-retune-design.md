@@ -65,23 +65,34 @@ regardless of difficulty:
   cadence and, last of all, its speed are the levers if it stays under the floor.
 - `maxTiles` stays at the difficulty's value; raising it is a reserve lever, not a default.
 
-**Calibration rule (300 greedy-bot attempts per level, BFS bot, deterministic seeds):**
+**Why the bot's win rate stopped being the target for goals:** the bot path-finds and always takes
+the matching tile; a human does not. A win-rate band measured against that bot pushed goals and
+cadence into shapes that fit the bot's play, not a person's. Goals, boards, speeds, obstacle
+cadence and every `tile`/`chain` star are design, chosen as a doubling ladder per act (64 → 128 →
+256), capped at 256 because the bot's Endless median (512) sits one to two rungs above a human's;
+every new board opens one rung below its act's top so the shape is learnt first; ★★ is always the
+easier star and ★★★ the harder; the bot never plans a cascade, so its chain hit rates understate
+humans and are reported, not targeted.
 
-| Quantity | Target |
-| -------- | ------ |
-| Bot win rate, act 1 | 40–80 % |
-| Bot win rate, act 2 | 20–50 % |
-| Bot win rate, act 3 | 10–30 % |
-| `eats ≤` stars | ★★ = p50 of eats among wins (rounded up to 2), ★★★ = p20 |
-| `time ≤` stars | ★★★ = p50 seconds × 1.4, rounded up to 5 (the bot does not think) |
-| `tile ≥` / `chain ≥` stars | the value whose hit rate among wins is nearest 20 %, within 15–30 %; candidates 64/128/256 and 3/4/5 |
+| # | board | speed | obstacleEvery | goal | ★★ | ★★★ |
+| - | ----- | ----- | -------------- | ---- | -- | --- |
+| 1 | open | classic (matchHint, maxTiles 4) | 0 | tile(64) | eats(18) | chain(3) |
+| 2 | pillars | classic | 0 | tile(128) | eats(24) | time(45) |
+| 3 | pillars | classic | 0 | chain(3) | eats(14) | tile(128) |
+| 4 | pillars | classic | 0 | tile(256) | eats(30) | chain(3) |
+| 5 | lanes | classic | 15 | tile(128) | eats(24) | time(50) |
+| 6 | lanes | classic | 15 | collect(40) | tile(128) | chain(3) |
+| 7 | lanes | classic | 20 | chain(4) | eats(26) | tile(128) |
+| 8 | chambers | classic | 15 | tile(256) | eats(26) | chain(3) |
+| 9 | chambers | frenzy | 10 | chain(4) | eats(16) | tile(128) |
+| 10 | chambers | frenzy | 10 | tile(256) | eats(26) | time(40) |
+| 11 | ring | frenzy | 15 | collect(40) | tile(128) | chain(3) |
+| 12 | ring | frenzy | 10 | tile(256) | eats(28) | chain(4) |
 
-If a level's win rate is above its band, raise the goal one notch (64 → 128 → 256, chain +1,
-collect +10); below it, ease obstacles one notch first (10 → 15 → 20), then the goal one notch
-down. At most two rounds. Level 1 keeps its teaching setup (hints, four tiles) whatever the numbers.
-
-The `time` stars are known to be trivial for the bot and possibly right for humans; they are not
-tightened until the analytics say what humans actually hit (§4).
+> The simulator sets `eats` (p50 of eats among wins, up to the nearest 2) and `time` (p50 seconds
+> × 1.4, up to the nearest 5). Goals, boards, speeds, cadence and tile/chain stars are design; the
+> bot's win and hit rates are reported next to them so a human collapse can be compared with the
+> bot's later.
 
 ## 4. Analytics: stars travel
 

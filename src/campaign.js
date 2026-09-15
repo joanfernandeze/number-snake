@@ -18,17 +18,17 @@ export const ACTS = ['Learn', 'Pressure', 'Mastery'];
 
 // The star thresholds are starting values; tools/simulate.js --campaign calibrates them (spec §8).
 export const LEVELS = [
-  { id: 1,  act: 1, board: 'open',     speed: 'classic', obstacleEvery: 0,  goal: tile(64),     stars: [eats(18), chain(4)],  matchHint: true, maxTiles: 4 },
-  { id: 2,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: tile(256),    stars: [eats(30), time(50)] },
-  { id: 3,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: chain(3),     stars: [eats(14), tile(256)] },
-  { id: 4,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: tile(512),    stars: [eats(36), chain(4)] },
-  { id: 5,  act: 2, board: 'lanes',    speed: 'classic', obstacleEvery: 15, goal: tile(256),    stars: [eats(30), time(55)] },
-  { id: 6,  act: 2, board: 'lanes',    speed: 'classic', obstacleEvery: 15, goal: collect(40),  stars: [chain(4), tile(256)] },
-  { id: 7,  act: 2, board: 'lanes',    speed: 'classic', obstacleEvery: 20, goal: chain(4),     stars: [eats(26), tile(256)] },
-  { id: 8,  act: 2, board: 'chambers', speed: 'classic', obstacleEvery: 15, goal: tile(256),    stars: [eats(26), chain(4)] },
+  { id: 1,  act: 1, board: 'open',     speed: 'classic', obstacleEvery: 0,  goal: tile(64),     stars: [eats(18), chain(3)],  matchHint: true, maxTiles: 4 },
+  { id: 2,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: tile(128),    stars: [eats(24), time(45)] },
+  { id: 3,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: chain(3),     stars: [eats(14), tile(128)] },
+  { id: 4,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: tile(256),    stars: [eats(30), chain(3)] },
+  { id: 5,  act: 2, board: 'lanes',    speed: 'classic', obstacleEvery: 15, goal: tile(128),    stars: [eats(24), time(50)] },
+  { id: 6,  act: 2, board: 'lanes',    speed: 'classic', obstacleEvery: 15, goal: collect(40),  stars: [tile(128), chain(3)] },
+  { id: 7,  act: 2, board: 'lanes',    speed: 'classic', obstacleEvery: 20, goal: chain(4),     stars: [eats(26), tile(128)] },
+  { id: 8,  act: 2, board: 'chambers', speed: 'classic', obstacleEvery: 15, goal: tile(256),    stars: [eats(26), chain(3)] },
   { id: 9,  act: 3, board: 'chambers', speed: 'frenzy',  obstacleEvery: 10, goal: chain(4),     stars: [eats(16), tile(128)] },
   { id: 10, act: 3, board: 'chambers', speed: 'frenzy',  obstacleEvery: 10, goal: tile(256),    stars: [eats(26), time(40)] },
-  { id: 11, act: 3, board: 'ring',     speed: 'frenzy',  obstacleEvery: 15, goal: collect(40),  stars: [chain(4), tile(256)] },
+  { id: 11, act: 3, board: 'ring',     speed: 'frenzy',  obstacleEvery: 15, goal: collect(40),  stars: [tile(128), chain(3)] },
   { id: 12, act: 3, board: 'ring',     speed: 'frenzy',  obstacleEvery: 10, goal: tile(256),    stars: [eats(28), chain(4)] },
 ];
 
