@@ -121,6 +121,20 @@ function greedyDir(g) {
     const d = bfsDir(g, target);
     if (d && isSafe(g, d)) return d;
   }
+  // Gate boards routinely seal the best tile away for a few moves, so there the bot falls through
+  // to the best tile it can actually reach; the gate-free levels keep the single-target bot they
+  // were calibrated with.
+  if (b.gates && b.gates.length) {
+    const scored = b.tiles.map(t => {
+      const dist = Math.abs(t.x - h.x) + Math.abs(t.y - h.y);
+      return { t, sc: (t.value === hv ? 0 : 1000 + t.value) * 100 + dist };
+    }).sort((p, q) => p.sc - q.sc);
+    for (const { t } of scored) {
+      if (t === target) continue;
+      const d = bfsDir(g, t);
+      if (d && isSafe(g, d)) return d;
+    }
+  }
   const ordered = [];
   if (target) {
     const dx = target.x - h.x, dy = target.y - h.y;
