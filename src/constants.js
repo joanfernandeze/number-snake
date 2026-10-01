@@ -109,7 +109,7 @@ export const WALL_COLORS = {
 // open, set B closed; a closing gate can still be crossed for warnTicks moves.
 export const GATE = {
   warnTicks: 2,       // moves a closing gate can still be crossed before it turns solid
-  minStartArea: 20,   // free cells the start must reach with set A open and set B closed
+  minRegion: 20,      // fewest cells any region may hold in either gate position (A open or B open)
   colors: { A: '#fde047', B: '#c4b5fd' }, // paler than every tile colour; a gate never carries a number
 };
 

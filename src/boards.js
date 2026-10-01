@@ -138,10 +138,10 @@ const ROWS = {
       '...#...',
       '...B...',
       '...#...',
-      '#A###B#',
+      '...#...',
+      '#A###A#',
       '.......',
       '...S...',
-      '.......',
       '.......',
       '.......',
       '.......',
@@ -208,10 +208,41 @@ function reachCount(b, blocked) {
   return seen.size;
 }
 
+// The size of every connected region (4-neighbour, inside the grid) of the cells that are neither
+// walls nor refused by `blocked(key)`.
+function regionSizes(b, blocked) {
+  const seen = new Set();
+  const sizes = [];
+  for (let sy = 0; sy < GRID.rows; sy++) {
+    for (let sx = 0; sx < GRID.cols; sx++) {
+      const sk = cellKey(sx, sy);
+      if (b.walls.has(sk) || blocked(sk) || seen.has(sk)) continue;
+      seen.add(sk);
+      const queue = [{ x: sx, y: sy }];
+      let size = 0;
+      while (queue.length) {
+        const { x, y } = queue.shift();
+        size++;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = x + dx, ny = y + dy, k = cellKey(nx, ny);
+          if (nx < 0 || ny < 0 || nx >= GRID.cols || ny >= GRID.rows) continue;
+          if (b.walls.has(k) || seen.has(k) || blocked(k)) continue;
+          seen.add(k);
+          queue.push({ x: nx, y: ny });
+        }
+      }
+      sizes.push(size);
+    }
+  }
+  return sizes;
+}
+
 // 7x11, exactly one start, the cell ahead of the start free (no wall, no gate), every non-wall
-// cell reachable from the start with all gates open, and — on a board with gates — at least
-// GATE.minStartArea cells reachable in the opening position (A open, B closed). A board that fails
-// this would spawn tiles the snake can never eat, start it facing a wall, or box it in.
+// cell reachable from the start with all gates open, and — on a board with gates — no region under
+// GATE.minRegion cells in either gate position (A open with B's cells blocked, then B open with A's
+// blocked). The snake can eat anywhere, and the swap that follows must leave it in a region with room
+// to play: a region whose exits all belong to one set seals the snake in when it eats there, so such
+// a board is refused. It would also spawn tiles the snake can never eat, or start it facing a wall.
 export function isValidBoard(rows) {
   if (!Array.isArray(rows) || rows.length !== GRID.rows) return false;
   if (!rows.every(r => typeof r === 'string' && r.length === GRID.cols)) return false;
@@ -222,17 +253,18 @@ export function isValidBoard(rows) {
   const free = GRID.cols * GRID.rows - b.walls.size;
   if (reachCount(b, () => false) !== free) return false;
   if (b.gates.length === 0) return true;
-  const closedB = new Set(b.gates.filter(g => g.set === 'B').map(g => cellKey(g.x, g.y)));
-  return reachCount(b, k => closedB.has(k)) >= GATE.minStartArea;
+  const cellsOf = set => new Set(b.gates.filter(g => g.set === set).map(g => cellKey(g.x, g.y)));
+  const [setA, setB] = [cellsOf('A'), cellsOf('B')];
+  return [setB, setA].every(blocked => regionSizes(b, k => blocked.has(k)).every(n => n >= GATE.minRegion));
 }
 
 // key -> { key, name, rows (the strings), walls, gates, start, cols }. Validated at module load: a
 // shipped board that is the wrong size, has no reachable start, seals off a pocket, has a gate
-// directly ahead of the start, or boxes the start in behind closed gates throws here
-// instead of shipping a level the player (or a tile spawn) can never actually reach.
+// directly ahead of the start, or has a region under GATE.minRegion cells in either gate position
+// throws here instead of shipping a level the player (or a tile spawn) can never actually reach.
 export const BOARDS = Object.fromEntries(Object.entries(ROWS).map(([key, { name, rows }]) => {
   if (!isValidBoard(rows)) {
-    throw new Error(`board '${key}' is not valid: 7x11, one start, free cell ahead, all cells reachable, room to start`);
+    throw new Error(`board '${key}' is not valid: 7x11, one start, free cell ahead, all cells reachable, no region under ${GATE.minRegion} cells in either gate position`);
   }
   const parsed = parseBoard(rows);
   return [key, { key, name, rows, walls: parsed.walls, gates: parsed.gates, start: parsed.start, cols: parsed.cols }];

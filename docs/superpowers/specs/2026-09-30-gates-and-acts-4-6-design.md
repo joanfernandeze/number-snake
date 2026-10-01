@@ -41,14 +41,22 @@ Decisions taken with the author:
   whether gates kill too often.
 - **Spawns.** Tiles and obstacles never land on a gate cell. Tiles also never land in a region that
   is sealed at that moment: a tile only spawns on a cell reachable from the head, where walls,
-  closed and closing gates and armed obstacles block and the snake's own body does not.
+  closed and closing gates and armed obstacles block and the snake's own body does not. When no
+  free cell is strictly reachable after a swap, a tile may land beyond a still-closing gate (the
+  player can still cross it). Obstacles avoid cells next to a gate unless nowhere else qualifies.
 - **Look.** Closed = a solid rounded block in its set's colour. Open = a dashed outline of the same
   colour on the floor, so the player sees where a gate will close. Closing = alternates between the
   two. No hazard stripes and no red glow: those stay reserved for obstacles and the frame.
 - **Sound.** A short two-note click when the sets swap.
 - **A valid board** (extends the existing rule): eleven rows of seven characters, one `S`, the
   start cell and the cell in front of it are `.`, every non-wall cell is reachable from `S` with all
-  gates open, and the start area (A open, B closed) holds at least `GATE.minStartArea` = 20 cells.
+  gates open, and in both gate positions (A open, B closed; B open, A closed) every region holds at
+  least `GATE.minRegion` = 20 cells. A region whose exits all belong to one set would seal the snake
+  in when it eats there, so no such region may be small.
+
+**Known limits.** A rare stall remains possible if the snake's body fills its whole region and the
+only free cell is beyond a gate it cannot reach before it shuts. And an obstacle two cells from a
+gate in a one-wide corridor can still seal that corridor, as walls can.
 
 ## 3. Boards
 
@@ -60,21 +68,22 @@ The door       The locks      The halves     The rooms      The vault
 .......        .......        ...#...        ...#...        .......
 .......        .......        ...A...        ...B...        .#####.
 .......        .......        ...#...        ...#...        .#...#.
-##A#B##        ###A###        ...#...        #A###B#        .A...B.
-.......        .......        ...#...        .......        .#...#.
-...S...        ...S...        ..S#...        ...S...        .#.S.#.
-.......        .......        ...#...        .......        .#...#.
+##A#B##        ###A###        ...#...        ...#...        .A...B.
+.......        .......        ...#...        #A###A#        .#...#.
+...S...        ...S...        ..S#...        .......        .#.S.#.
+.......        .......        ...#...        ...S...        .#...#.
 .......        ###B###        ...#...        .......        .B...A.
 .......        .......        ...B...        .......        .#...#.
 .......        .......        ...#...        .......        .#####.
 .......        .......        ...#...        .......        .......
-72 / 71 / 71   65 / 43 / 43   68 / 67 / 67   70 / 59 / 69   57 / 55 / 55
+72 / 71 / 71   65 / 43 / 43   68 / 67 / 67   69 / 68 / 42   57 / 55 / 55
 ```
 
 - **The door** teaches the rule: one door is always open, so the two halves never disconnect.
 - **The locks** is the first real choice: eating opens the bottom and seals the top, and back.
-- **The halves** turns the same idea on its side, with the start on the narrow left.
-- **The rooms** has three gates and two small rooms that open to each other in turn.
+- **The halves** turns the same idea on its side, with the start in the left half.
+- **The rooms** has two 12-cell rooms, each with its own door down; eating in a room swaps you into
+  the joined rooms (25 cells), eating below seals them off.
 - **The vault** is the finale's board: an inner room and an outer ring joined by four gates.
 
 ## 4. Levels 13–24
@@ -107,7 +116,7 @@ the bot's wins**. A level that misses is tuned on its own (obstacles, speed, goa
 
 ## 5. Engine and modules
 
-- **`src/constants.js`** — `GATE = { warnTicks: 2, minStartArea: 20, colors: { A: '#fde047', B:
+- **`src/constants.js`** — `GATE = { warnTicks: 2, minRegion: 20, colors: { A: '#fde047', B:
   '#c4b5fd' } }`: a light yellow and a light lavender, paler than every `POWER_COLORS` tile, and a
   gate never carries a number, so the two never read alike.
 - **`src/boards.js`** — `parseBoard` reads `A`/`B` into `gates: [{ x, y, set }]`; `isValidBoard`

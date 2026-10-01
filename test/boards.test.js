@@ -62,28 +62,64 @@ test('parseBoard reads A and B as gates in two sets, not as walls', () => {
   assert.throws(() => parseBoard(DOOR.map((r, i) => (i === 0 ? 'C......' : r))), /bad board character/);
 });
 
-test('isValidBoard: every cell reachable with all gates open, and room to start with B closed', () => {
+test('isValidBoard: every cell reachable with all gates open, and no region under the minimum in either gate position', () => {
   assert.equal(isValidBoard(DOOR), true);
   // A 3x3 room around the start whose only way out is a B gate: 9 cells with B closed, under 20.
   const boxed = ['.......', '.......', '.......', '.#####.', '.#...#.', '.#.S.#.',
     '.#...#.', '.##B##.', '.......', '.......', '.......'];
   assert.equal(isValidBoard(boxed), false, 'start area too small while B is closed');
-  assert.equal(isValidBoard(boxed.map(r => r.replace('B', 'A'))), true, 'the same room with an open A gate');
+  // Now invalid too: eating inside the room while A is open closes its only exit and seals the snake in.
+  assert.equal(isValidBoard(boxed.map(r => r.replace('B', 'A'))), false, 'a room whose only exit is one set is a trap');
   // A gate may not stand directly ahead of the start.
   const blocked = BOARDS.open.rows.map((r, i) => (i === 4 ? '...A...' : r));
   assert.equal(isValidBoard(blocked), false);
 });
 
-test('isValidBoard: the start area with B closed must be at least GATE.minStartArea cells', () => {
+test('isValidBoard: a region must hold at least GATE.minRegion cells', () => {
   // The two left columns (22 cells) are cut off by a wall column whose only gap at row 5 is a B gate.
   // Walls at (0,0) and (0,1) leave 20 cells for the start with B closed; one more at (0,2) leaves 19.
   const room = tops => ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
     .map((_, y) => (tops.includes(y) ? '#' : '.') + (y === 5 ? 'SB' : '.#') + '....');
   const enough = room([0, 1]);
   const short = room([0, 1, 2]);
-  assert.equal(GATE.minStartArea, 20, 'the boards below are counted against 20');
+  assert.equal(GATE.minRegion, 20, 'the boards below are counted against 20');
   assert.equal(isValidBoard(enough), true, 'exactly 20 cells');
   assert.equal(isValidBoard(short), false, '19 cells');
+});
+
+test('the old rooms layout is invalid (its right room is all B gates); the new one is valid', () => {
+  const old = ['...#...', '...B...', '...#...', '#A###B#', '.......', '...S...', '.......', '.......',
+    '.......', '.......', '.......'];
+  assert.equal(isValidBoard(old), false, 'the right room is reached only through B gates');
+  assert.equal(isValidBoard(BOARDS.rooms.rows), true);
+});
+
+test('every shipped gate board leaves no region under GATE.minRegion in either gate position', () => {
+  for (const [key, b] of Object.entries(BOARDS)) {
+    if (b.gates.length === 0) continue;
+    for (const closedSet of ['A', 'B']) {
+      const blocked = new Set(b.walls);
+      for (const g of b.gates) if (g.set === closedSet) blocked.add(`${g.x},${g.y}`);
+      const seen = new Set();
+      for (let y = 0; y < GRID.rows; y++) for (let x = 0; x < GRID.cols; x++) {
+        if (blocked.has(`${x},${y}`) || seen.has(`${x},${y}`)) continue;
+        let size = 0;
+        const stack = [[x, y]];
+        seen.add(`${x},${y}`);
+        while (stack.length) {
+          const [cx, cy] = stack.pop();
+          size++;
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = cx + dx, ny = cy + dy, k = `${nx},${ny}`;
+            if (nx < 0 || ny < 0 || nx >= GRID.cols || ny >= GRID.rows || blocked.has(k) || seen.has(k)) continue;
+            seen.add(k);
+            stack.push([nx, ny]);
+          }
+        }
+        assert.ok(size >= GATE.minRegion, `${key} with ${closedSet} closed has a region of ${size} cells`);
+      }
+    }
+  }
 });
 
 test('the five gate boards ship, each with both sets', () => {
