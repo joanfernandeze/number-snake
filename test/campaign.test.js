@@ -29,6 +29,8 @@ test('twenty-four levels, numbered 1-24, four per act, on shipped boards and spe
     for (const c of l.stars) assert.ok(CONDS.has(c.type) && Number.isInteger(c.value) && c.value > 0, `level ${l.id} star`);
     // A star must be judgeable at the moment of victory: a tile goal cannot ask for a higher tile.
     if (l.goal.type === 'tile') for (const c of l.stars) assert.notEqual(c.type, 'tile', `level ${l.id} asks for a tile beyond its goal`);
+    // A star of the goal's own type must ask for strictly more, or it is automatic at the moment of victory.
+    for (const c of l.stars) if (c.type === l.goal.type) assert.ok(c.value > l.goal.value, `level ${l.id} has an automatic ${c.type} star`);
     // A collect goal already counts eaten tiles as the win condition; an eats star would double up.
     if (l.goal.type === 'collect') for (const c of l.stars) assert.notEqual(c.type, 'eats', `level ${l.id} has both a collect goal and an eats star`);
   });
@@ -42,6 +44,14 @@ test('twenty-four levels, numbered 1-24, four per act, on shipped boards and spe
   for (const l of LEVELS.filter(l => l.id <= 12)) {
     assert.equal(BOARDS[l.board].gates.length, 0, `level ${l.id} keeps its gate-free board`);
   }
+});
+
+test('each new act opens gently: acts 1 and 4 are classic without obstacles, act 6 is frenzy', () => {
+  for (const l of LEVELS.filter(l => l.act === 1 || l.act === 4)) {
+    assert.equal(l.speed, 'classic', `level ${l.id} speed`);
+    assert.equal(l.obstacleEvery, 0, `level ${l.id} obstacles`);
+  }
+  for (const l of LEVELS.filter(l => l.act === 6)) assert.equal(l.speed, 'frenzy', `level ${l.id} speed`);
 });
 
 test('conditionMet judges each condition type from the run facts', () => {
