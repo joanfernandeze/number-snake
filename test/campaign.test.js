@@ -15,9 +15,9 @@ function fakeStorage(initial) {
 const GOALS = new Set(['tile', 'chain', 'collect']);
 const CONDS = new Set(['tile', 'chain', 'collect', 'eats', 'time']);
 
-test('twelve levels, numbered 1-12, four per act, on shipped boards and speeds', () => {
-  assert.equal(LEVELS.length, 12);
-  assert.deepEqual(ACTS, ['Learn', 'Pressure', 'Mastery']);
+test('twenty-four levels, numbered 1-24, four per act, on shipped boards and speeds', () => {
+  assert.equal(LEVELS.length, 24);
+  assert.deepEqual(ACTS, ['Learn', 'Pressure', 'Mastery', 'Gates', 'Crossings', 'Vault']);
   LEVELS.forEach((l, i) => {
     assert.equal(l.id, i + 1);
     assert.equal(l.act, Math.floor(i / 4) + 1, `level ${l.id} act`);
@@ -35,7 +35,13 @@ test('twelve levels, numbered 1-12, four per act, on shipped boards and speeds',
   assert.equal(LEVELS[0].matchHint, true);
   assert.equal(LEVELS[0].maxTiles, 4);
   assert.equal(levelById(7).board, 'lanes');
-  assert.equal(levelById(13), null);
+  assert.equal(levelById(25), null);
+  for (const l of LEVELS.filter(l => l.id >= 13)) {
+    assert.ok(BOARDS[l.board].gates.length > 0, `level ${l.id} is played on a gate board`);
+  }
+  for (const l of LEVELS.filter(l => l.id <= 12)) {
+    assert.equal(BOARDS[l.board].gates.length, 0, `level ${l.id} keeps its gate-free board`);
+  }
 });
 
 test('conditionMet judges each condition type from the run facts', () => {
@@ -82,6 +88,8 @@ test('cfgFor runs the level on its speed with its own obstacle cadence, hints an
   assert.equal(l9.matchHint, false);
   assert.equal(l9.maxTiles, DIFFICULTIES.frenzy.maxTiles);
   assert.equal(boardFor(levelById(12)), BOARDS.ring);
+  assert.equal(boardFor(levelById(13)), BOARDS.door);
+  assert.equal(boardFor(levelById(24)), BOARDS.vault);
 });
 
 test('progress: corrupt storage is a fresh campaign; stars round-trip and never exceed 3', () => {
@@ -110,8 +118,8 @@ test('unlocking is linear on one star; recordResult keeps the best; nextLevel wa
   assert.equal(isUnlocked(st, 3), false);
   assert.equal(nextLevel(st), 2);
   assert.equal(recordResult(st, 1, 3), true);
-  for (let id = 2; id <= 12; id++) recordResult(st, id, 1);
-  assert.equal(nextLevel(st), 12, 'all cleared: the campaign points at the finale');
-  assert.equal(totalStars(st), 3 + 11);
+  for (let id = 2; id <= 24; id++) recordResult(st, id, 1);
+  assert.equal(nextLevel(st), 24, 'all cleared: the campaign points at the finale');
+  assert.equal(totalStars(st), 3 + 23);
   assert.equal(recordResult(st, 5, 0), false, 'a loss records nothing');
 });
