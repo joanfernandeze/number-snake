@@ -67,7 +67,7 @@ test('isValidBoard: every cell reachable with all gates open, and no region unde
   // A 3x3 room around the start whose only way out is a B gate: 9 cells with B closed, under 20.
   const boxed = ['.......', '.......', '.......', '.#####.', '.#...#.', '.#.S.#.',
     '.#...#.', '.##B##.', '.......', '.......', '.......'];
-  assert.equal(isValidBoard(boxed), false, 'start area too small while B is closed');
+  assert.equal(isValidBoard(boxed), false, 'its only region is 9 cells while B is closed');
   // Now invalid too: eating inside the room while A is open closes its only exit and seals the snake in.
   assert.equal(isValidBoard(boxed.map(r => r.replace('B', 'A'))), false, 'a room whose only exit is one set is a trap');
   // A gate may not stand directly ahead of the start.

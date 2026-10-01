@@ -60,8 +60,8 @@ gate in a one-wide corridor can still seal that corridor, as walls can.
 
 ## 3. Boards
 
-Five new boards, checked against §2's validity rule (free cells / start area with A open / area
-after the first swap):
+Five new boards, checked against §2's validity rule (free cells / the start's region with A open
+/ the head's region after a first bite near the start):
 
 ```
 The door       The locks      The halves     The rooms      The vault
