@@ -66,8 +66,9 @@ export function tickGates(board, snakeCells) {
 
 // Cells the head can get to right now: walls, gates that are not open and armed obstacles block;
 // the snake's own body does not, because it moves out of the way. Keeps a tile from spawning in a
-// region a closed gate has sealed off.
-export function reachableFrom(board, head) {
+// region a closed gate has sealed off. With passClosing a closing gate counts as passable too (it
+// still can be crossed for a move or two), so only a fully closed gate blocks.
+export function reachableFrom(board, head, passClosing = false) {
   const key = (x, y) => `${x},${y}`;
   const seen = new Set([key(head.x, head.y)]);
   const queue = [head];
@@ -78,7 +79,7 @@ export function reachableFrom(board, head) {
       if (nx < 0 || ny < 0 || nx >= board.cols || ny >= board.rows || seen.has(k)) continue;
       if (wallAt(board, nx, ny) || armedObstacleAt(board, nx, ny)) continue;
       const g = gateAt(board, nx, ny);
-      if (g && g.state !== 'open') continue;
+      if (g && (passClosing ? g.state === 'closed' : g.state !== 'open')) continue;
       seen.add(k);
       queue.push({ x: nx, y: ny });
     }
@@ -120,14 +121,22 @@ function isOccupied(board, snakeCells, x, y) {
 // Spawn one tile on a random empty cell. Returns the tile, or null if the board is full. On a board
 // with gates a tile only lands where the head can reach now; a board without gates skips that
 // search, so its spawns — and every seeded run on it — are exactly what they were before gates.
+// Right after a swap the head can be shut in by gates that are still closing, with no free cell
+// in reach: tiles only refill and gates only swap on an eat, so that would soft-lock the run. In
+// that case closing gates count as passable, because the player can still get through them.
 export function spawnTile(board, rng, maxValue, snakeCells, decay, span) {
-  const reach = board.gates && board.gates.length && snakeCells.length ? reachableFrom(board, snakeCells[0]) : null;
-  const empties = [];
-  for (let y = 0; y < board.rows; y++) {
-    for (let x = 0; x < board.cols; x++) {
-      if (!isOccupied(board, snakeCells, x, y) && (!reach || reach.has(`${x},${y}`))) empties.push({ x, y });
+  const gated = board.gates && board.gates.length && snakeCells.length;
+  const collect = (reach) => {
+    const cells = [];
+    for (let y = 0; y < board.rows; y++) {
+      for (let x = 0; x < board.cols; x++) {
+        if (!isOccupied(board, snakeCells, x, y) && (!reach || reach.has(`${x},${y}`))) cells.push({ x, y });
+      }
     }
-  }
+    return cells;
+  };
+  let empties = collect(gated ? reachableFrom(board, snakeCells[0]) : null);
+  if (gated && empties.length === 0) empties = collect(reachableFrom(board, snakeCells[0], true));
   if (empties.length === 0) return null;
   const cell = empties[randInt(rng, empties.length)];
   const tile = { x: cell.x, y: cell.y, value: pickValue(rng, maxValue, decay, SPAWN.baseValue, span) };
@@ -144,7 +153,8 @@ export function refill(board, rng, maxValue, snakeCells, maxTiles, decay, span) 
 
 // Place one obstacle. It keeps clear of the head so it can never appear in the player's
 // face, and prefers not to sit beside another obstacle so a chain of them cannot wall the
-// board in half. Returns the obstacle, or null when nowhere qualifies at all.
+// board in half. A cell beside a gate is treated the same way, so an obstacle cannot seal a gate
+// shut; it only lands there when nowhere else qualifies. Returns the obstacle, or null when nowhere qualifies at all.
 export function spawnObstacle(board, rng, snakeCells, head, minHeadDist = OBSTACLE.minHeadDist) {
   const clear = [], beside = [];
   for (let y = 0; y < board.rows; y++) {
@@ -152,7 +162,9 @@ export function spawnObstacle(board, rng, snakeCells, head, minHeadDist = OBSTAC
       if (isOccupied(board, snakeCells, x, y)) continue;
       if (head && Math.abs(x - head.x) + Math.abs(y - head.y) < minHeadDist) continue;
       const touching = obstacleAt(board, x - 1, y) || obstacleAt(board, x + 1, y)
-        || obstacleAt(board, x, y - 1) || obstacleAt(board, x, y + 1);
+        || obstacleAt(board, x, y - 1) || obstacleAt(board, x, y + 1)
+        || gateAt(board, x - 1, y) || gateAt(board, x + 1, y)
+        || gateAt(board, x, y - 1) || gateAt(board, x, y + 1);
       (touching ? beside : clear).push({ x, y });
     }
   }

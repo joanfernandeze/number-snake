@@ -275,3 +275,39 @@ test('tiles and obstacles never land on a gate, and tiles never in a sealed regi
     for (const t of b.tiles) assert.ok(t.y > 3, `seed ${seed}: tile at ${t.x},${t.y} is behind the closed gate`);
   }
 });
+
+test('reachableFrom: a closing gate blocks unless passClosing; armed obstacles block, the body does not', () => {
+  const b = createBoard(5, 1, new Set(), [{ x: 2, y: 0, set: 'A' }]);
+  swapGates(b); // A is now closing
+  assert.equal(reachableFrom(b, { x: 0, y: 0 }).has('3,0'), false, 'a closing gate blocks');
+  assert.equal(reachableFrom(b, { x: 0, y: 0 }, true).has('3,0'), true, 'passClosing lets it through');
+  b.gates[0].state = 'closed';
+  assert.equal(reachableFrom(b, { x: 0, y: 0 }, true).has('3,0'), false, 'a closed gate always blocks');
+
+  const c = createBoard(5, 1);
+  c.obstacles = [{ x: 2, y: 0, armed: true }];
+  assert.equal(reachableFrom(c, { x: 0, y: 0 }).has('3,0'), false, 'an armed obstacle in a corridor blocks');
+  c.obstacles = [{ x: 2, y: 0, armed: false, warn: 2 }];
+  assert.equal(reachableFrom(c, { x: 0, y: 0 }).has('3,0'), true, 'a blinking one does not');
+  // The body is not an input: a snake lying along the corridor leaves the far end reachable.
+  c.obstacles = [];
+  assert.equal(reachableFrom(c, { x: 0, y: 0 }).has('4,0'), true, 'the corridor beyond the body is reached');
+});
+
+test('spawnTile falls back to closing gates when the head is shut in with nothing free', () => {
+  const b = createBoard(5, 1, new Set(), [{ x: 2, y: 0, set: 'A' }]);
+  swapGates(b); // the gate beside the head's room is closing, so strictly nothing is reachable
+  const snake = [{ x: 1, y: 0 }, { x: 0, y: 0 }];
+  assert.equal(reachableFrom(b, snake[0]).size, 2, 'strictly the room is only the snake');
+  const t = spawnTile(b, createRng(3), 2, snake);
+  assert.ok(t, 'a tile still spawns');
+  assert.ok(t.x >= 3, `it lands beyond the closing gate, got ${t.x}`);
+});
+
+test('spawnObstacle keeps clear of gates while anywhere else qualifies', () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const b = createBoard(5, 1, new Set(), [{ x: 2, y: 0, set: 'A' }]);
+    const o = spawnObstacle(b, createRng(seed), [], null, 0);
+    assert.ok(o.x === 0 || o.x === 4, `seed ${seed}: obstacle at ${o.x} sits beside the gate`);
+  }
+});
