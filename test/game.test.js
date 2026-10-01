@@ -437,5 +437,24 @@ test('a board without gates never reports a swap', () => {
   const g = createGame(createRng(1), DIFFICULTIES.classic);
   g.board.tiles = [{ x: 3, y: 4, value: 2 }];
   startRun(g);
-  assert.equal(step(g).swapped, false);
+  const ev = step(g);
+  assert.equal(ev.ate, true);
+  assert.equal(ev.swapped, false);
+});
+
+test('the closing window ends on the third move after the bite', () => {
+  const rows = ['.......', '...A...', '.......', '.......', '.......', '...S...',
+    '.......', '.......', '.......', '.......', '.......'];
+  const g = createGame(createRng(1), DIFFICULTIES.classic, { board: parseBoard(rows) });
+  g.board.tiles = [{ x: 3, y: 4, value: 4 }];
+  startRun(g);
+  assert.equal(step(g).ate, true);              // eat at (3,4): A starts closing
+  g.board.tiles = [];
+  assert.equal(step(g).over, false);            // (3,3)
+  assert.equal(g.board.gates[0].state, 'closing');
+  assert.equal(step(g).over, false);            // (3,2): the window's last move; the gate is free, so it shuts
+  const ev = step(g);                           // (3,1): shut by now
+  assert.equal(ev.over, true);
+  assert.equal(ev.cause.type, 'gate');
+  assert.deepEqual(ev.cause.cell, { x: 3, y: 1 });
 });

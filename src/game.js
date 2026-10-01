@@ -163,6 +163,8 @@ export function step(game) {
   }
 
   Snake.move(s);
+  // Gates tick at the END of a move, on the post-move cells — unlike obstacles, which arm at the start.
+  // Do not harmonise them: it would shift the 2-move crossing window.
   Board.tickGates(b, s.cells);
   return { over: false, ate: false, merges: 0, gained: 0, cell: next, obstacle: null, armed, relief: false, swapped: false };
 }
