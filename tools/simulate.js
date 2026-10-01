@@ -53,18 +53,22 @@ function isSafe(g, d) {
   if (Snake.isWall(cell, b.cols, b.rows)) return false;
   if (Board.wallAt(b, cell.x, cell.y)) return false;         // a wall cell kills like the frame
   if (Board.obstacleAt(b, cell.x, cell.y)) return false;   // a dropped block kills like a wall
+  if (Board.closedGateAt(b, cell.x, cell.y)) return false; // a closed gate kills like a wall
   const willEat = !!Board.tileAt(b, cell.x, cell.y);
   return !Snake.hitsSelf(s, cell, willEat);
 }
 
 // Cells the BFS below may not enter: every obstacle (armed or not — a countdown still turns
-// solid before the bot could act on the warning) and the snake's own body, except the tail,
+// solid before the bot could act on the warning), every gate that is not open, and the snake's own body, except the tail,
 // which vacates on a move that does not eat. A snapshot of the board as it is now, not a
 // step-by-step simulation of the tail following the head along the path.
 function blockedCells(g) {
   const s = g.snake, b = g.board;
   const blocked = new Set();
   for (const o of b.obstacles) blocked.add(`${o.x},${o.y}`);
+  // A closing gate still lets the snake through, but it turns solid within a move or two — sooner
+  // than a path through it would be walked — so the planner treats it as shut, like a closed one.
+  for (const gt of b.gates || []) if (gt.state !== 'open') blocked.add(`${gt.x},${gt.y}`);
   const bodyLen = s.cells.length > 1 ? s.cells.length - 1 : s.cells.length;
   for (let i = 0; i < bodyLen; i++) blocked.add(`${s.cells[i].x},${s.cells[i].y}`);
   return blocked;
