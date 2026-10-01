@@ -26,7 +26,7 @@ export function deviceFacts(todayKey, storage = globalThis.localStorage, key = A
 
 // Exactly the fields the Worker accepts, picked here so nothing else can leave the device even
 // by accident: the privacy claim holds by construction, not by trusting the server to drop extras.
-// `level` is the campaign level (1-12); it is null outside the campaign.
+// `level` is the campaign level (1-24); it is null outside the campaign.
 export function runFacts(rec, device) {
   return {
     daySince: device.daySince, daysPlayed: device.daysPlayed, firstOfDay: device.firstOfDay,

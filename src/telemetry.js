@@ -3,7 +3,7 @@ import { TELEMETRY } from './constants.js';
 // Per-run records and the spec §2 aggregates. Pure; storage is injected so it
 // is testable in Node (defaults to window.localStorage in the browser).
 //
-// A run record: { session, difficulty, mode: 'free'|'daily'|'practice'|'campaign', level: 1-12|null,
+// A run record: { session, difficulty, mode: 'free'|'daily'|'practice'|'campaign', level: 1-24|null,
 //                 stars: 0-3|null, firstMergeMs|null, durationMs, ticks, eaten, score, bestTile, bestCombo,
 //                 cause: 'wall'|'self'|'obstacle'|'won', endedAt }, as produced by `buildRun`.
 // `session` is one page load, so runs-per-session approximates "runs per player".

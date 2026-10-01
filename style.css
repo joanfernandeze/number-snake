@@ -118,7 +118,7 @@ html, body {
   display: flex; align-items: center; justify-content: center;
   overflow-y: auto;
 }
-.panel.map { max-width: min(94vw, 380px); padding: 20px 18px 18px; }
+.panel.map { max-width: min(94vw, 380px); padding: 20px 18px 18px; margin: auto 0; }
 .panel.map h1 { font-size: 22px; margin-bottom: 4px; }
 .act { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #64748b; margin: 12px 0 5px; text-align: left; }
 .lv { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }

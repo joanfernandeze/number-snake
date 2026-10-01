@@ -172,7 +172,7 @@ export const ANALYTICS = {
   maxDays: 400, // a year of daily play is plenty
 };
 
-// The campaign: twelve levels on shaped boards. Progress is stars per level; unlocking is derived.
+// The campaign: twenty-four levels on shaped boards. Progress is stars per level; unlocking is derived.
 export const CAMPAIGN = {
   storageKey: 'numberSnake.campaign',
 };

@@ -58,7 +58,7 @@ let difficulty = DEFAULT_DIFFICULTY;
 let mode = 'free';
 let daily = loadDaily();
 
-// 'campaign' plays one of the twelve levels: a shaped board, a goal that ends the run in victory,
+// 'campaign' plays one of the twenty-four levels: a shaped board, a goal that ends the run in victory,
 // and two extra-star conditions judged at that moment. `level` is the level object being played.
 let campaign = loadCampaign();
 let level = null;
@@ -113,8 +113,8 @@ function paintHud() {
   else { $('bestLabel').textContent = 'EAT'; $('bestTile').textContent = `${game.eaten}/${g.value}`; }
 }
 
-// The map: three acts of four levels, stars per level, the next level highlighted, locked ones
-// dimmed. Built from LEVELS so a thirteenth level is one line of data.
+// The map: six acts of four levels, stars per level, the next level highlighted, locked ones
+// dimmed. Built from LEVELS so a twenty-fifth level is one line of data.
 function paintMap() {
   $('mapStars').textContent = totalStars(campaign);
   const acts = $('mapActs');
@@ -153,6 +153,9 @@ function showMap() {
   paintDaily();
   $('overlay').classList.add('hidden');
   $('mapOverlay').classList.remove('hidden');
+  // Twenty-four tiles do not fit a phone screen at once: bring the level on offer into view.
+  const offered = $('mapActs').querySelector('button[data-now="true"]');
+  if (offered && offered.scrollIntoView) offered.scrollIntoView({ block: 'center' });
 }
 
 // The game-over panel reads differently for a daily, a campaign level and free play. It describes
