@@ -85,3 +85,14 @@ test('isValidBoard: the start area with B closed must be at least GATE.minStartA
   assert.equal(isValidBoard(enough), true, 'exactly 20 cells');
   assert.equal(isValidBoard(short), false, '19 cells');
 });
+
+test('the five gate boards ship, each with both sets', () => {
+  const counts = { door: 2, locks: 2, halves: 2, rooms: 3, vault: 4 };
+  for (const [key, n] of Object.entries(counts)) {
+    const b = BOARDS[key];
+    assert.ok(b, `${key} ships`);
+    assert.equal(b.gates.length, n, `${key} gate count`);
+    assert.ok(b.gates.some(g => g.set === 'A') && b.gates.some(g => g.set === 'B'), `${key} has both sets`);
+  }
+  for (const key of ['open', 'pillars', 'lanes', 'chambers', 'ring']) assert.deepEqual(BOARDS[key].gates, []);
+});

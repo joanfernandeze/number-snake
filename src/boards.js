@@ -1,7 +1,8 @@
 import { GRID, GATE } from './constants.js';
 
 // The boards, as eleven rows of seven characters: '#' wall, 'S' where the snake starts (heading
-// up), '.' free. Data, not code, so a new shape is a picture, and the test proves it playable.
+// up), 'A'/'B' a gate of set A or B, '.' free. Data, not code, so a new shape
+// is a picture, and the test proves it playable.
 const ROWS = {
   open: {
     name: 'Open',
@@ -80,6 +81,86 @@ const ROWS = {
       '.#...#.',
       '.##.##.',
       '.......',
+      '.......',
+    ],
+  },
+  door: {
+    name: 'The door',
+    rows: [
+      '.......',
+      '.......',
+      '.......',
+      '##A#B##',
+      '.......',
+      '...S...',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+    ],
+  },
+  locks: {
+    name: 'The locks',
+    rows: [
+      '.......',
+      '.......',
+      '.......',
+      '###A###',
+      '.......',
+      '...S...',
+      '.......',
+      '###B###',
+      '.......',
+      '.......',
+      '.......',
+    ],
+  },
+  halves: {
+    name: 'The halves',
+    rows: [
+      '...#...',
+      '...A...',
+      '...#...',
+      '...#...',
+      '...#...',
+      '..S#...',
+      '...#...',
+      '...#...',
+      '...B...',
+      '...#...',
+      '...#...',
+    ],
+  },
+  rooms: {
+    name: 'The rooms',
+    rows: [
+      '...#...',
+      '...B...',
+      '...#...',
+      '#A###B#',
+      '.......',
+      '...S...',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+    ],
+  },
+  vault: {
+    name: 'The vault',
+    rows: [
+      '.......',
+      '.#####.',
+      '.#...#.',
+      '.A...B.',
+      '.#...#.',
+      '.#.S.#.',
+      '.#...#.',
+      '.B...A.',
+      '.#...#.',
+      '.#####.',
       '.......',
     ],
   },
