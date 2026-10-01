@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createFx, labelFor, addMerge, addShake, addDeath, addObstacle, ageOf, update } from '../src/fx.js';
+import { createFx, labelFor, addMerge, addShake, addDeath, addObstacle, addGateSwap, ageOf, update } from '../src/fx.js';
 import { FX } from '../src/constants.js';
 
 const half = () => 0.5; // deterministic stand-in for Math.random
@@ -74,4 +74,11 @@ test('addObstacle rings the cell so a new obstacle cannot land unnoticed', () =>
   assert.equal(ageOf(fx.rings[0], 1000), 0);
   update(fx, 1000 + FX.ringMs + 1, 16);
   assert.equal(fx.rings.length, 0, 'and it fades like any other ring');
+});
+
+test('addGateSwap records when the gates swapped', () => {
+  const fx = createFx();
+  assert.equal(fx.gateSwapAt, null);
+  addGateSwap(fx, 1234);
+  assert.equal(fx.gateSwapAt, 1234);
 });

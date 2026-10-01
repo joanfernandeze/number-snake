@@ -110,7 +110,8 @@ export const WALL_COLORS = {
 export const GATE = {
   warnTicks: 2,       // moves a closing gate can still be crossed before it turns solid
   minRegion: 20,      // fewest cells any region may hold in either gate position (A open or B open)
-  colors: { A: '#fde047', B: '#c4b5fd' }, // paler than every tile colour; a gate never carries a number
+  blinkMs: 90,        // half-period of a closing gate's blink, short enough to read within two moves at the fastest speed
+  colors: { A: '#bbf7d0', B: '#c4b5fd' }, // pale mint and pale lavender: paler than every tile colour, and clear of the obstacle yellow
 };
 
 export const STORAGE_KEY = 'numberSnake.best';

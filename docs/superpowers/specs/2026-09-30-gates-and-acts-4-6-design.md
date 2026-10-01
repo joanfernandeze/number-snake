@@ -116,8 +116,8 @@ the bot's wins**. A level that misses is tuned on its own (obstacles, speed, goa
 
 ## 5. Engine and modules
 
-- **`src/constants.js`** — `GATE = { warnTicks: 2, minRegion: 20, colors: { A: '#fde047', B:
-  '#c4b5fd' } }`: a light yellow and a light lavender, paler than every `POWER_COLORS` tile, and a
+- **`src/constants.js`** — `GATE = { warnTicks: 2, minRegion: 20, colors: { A: '#bbf7d0', B:
+  '#c4b5fd' } }`: a pale mint and a pale lavender, paler than every `POWER_COLORS` tile, and a
   gate never carries a number, so the two never read alike.
 - **`src/boards.js`** — `parseBoard` reads `A`/`B` into `gates: [{ x, y, set }]`; `isValidBoard`
   applies §2's rule; the five boards join `BOARDS`.

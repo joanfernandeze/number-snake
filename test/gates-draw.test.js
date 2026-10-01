@@ -6,11 +6,13 @@ import { createBoard } from '../src/board.js';
 import { GATE } from '../src/constants.js';
 
 // Records the fillStyle of every fill() and the strokeStyle of every stroke(); every other call is
-// a no-op, so draw() runs without a browser.
+// a no-op, so draw() runs without a browser. (fillRect/strokeRect are not recorded.) The dash of
+// every stroke() is recorded too.
 function styleCtx() {
-  const t = { fills: [], strokes: [], fillStyle: null, strokeStyle: null };
+  const t = { fills: [], strokes: [], dashes: [], dash: [], fillStyle: null, strokeStyle: null };
+  t.setLineDash = (d) => { t.dash = d; };
   t.fill = () => t.fills.push(t.fillStyle);
-  t.stroke = () => t.strokes.push(t.strokeStyle);
+  t.stroke = () => { t.strokes.push(t.strokeStyle); t.dashes.push(t.dash); };
   return new Proxy(t, {
     get: (o, k) => (k in o ? o[k] : () => {}),
     set: (o, k, v) => { o[k] = v; return true; },
@@ -34,16 +36,24 @@ test('a closed gate is a solid block, an open one a dashed outline', () => {
   assert.ok(ctx.fills.includes(GATE.colors.B), 'B (closed) is filled');
   assert.ok(!ctx.fills.includes(GATE.colors.A), 'A (open) is not filled');
   assert.ok(ctx.strokes.includes(GATE.colors.A), 'A (open) is outlined');
+  assert.ok(!ctx.strokes.includes(GATE.colors.B), 'B (closed) is not stroked');
+  assert.ok(ctx.dashes[ctx.strokes.indexOf(GATE.colors.A)].length > 0, 'the outline is dashed');
 });
 
-test('a closing gate alternates between block and outline', () => {
+test('a closing gate alternates between block and outline, anchored to the bite', () => {
   const game = gateFrame();
   game.board.gates[0].state = 'closing';
+  const fx = createFx();
+  fx.gateSwapAt = 0;
   const on = styleCtx();
-  draw(on, view, game, createFx(), 0, rest);
+  draw(on, view, game, fx, 0, rest);
   assert.ok(on.fills.includes(GATE.colors.A), 'blink on: filled');
   const off = styleCtx();
-  draw(off, view, game, createFx(), 150, rest);
+  draw(off, view, game, fx, GATE.blinkMs, rest);
   assert.ok(!off.fills.includes(GATE.colors.A), 'blink off: not filled');
   assert.ok(off.strokes.includes(GATE.colors.A), 'blink off: outlined');
+  fx.gateSwapAt = 1000;
+  const anchored = styleCtx();
+  draw(anchored, view, game, fx, 1000, rest);
+  assert.ok(anchored.fills.includes(GATE.colors.A), 'solid at the moment of the bite, not by the global clock');
 });

@@ -8,6 +8,7 @@ export function createFx() {
     bursts: [],     // {text, x, y, level, color, born, life} "Merge!" text rising from the cell
     particles: [],  // {x, y, vx, vy, color, born, life}   x/y in cells, vx/vy in cells per second
     shake: null,    // {until, mag}
+    gateSwapAt: null, // ms of the last gate swap; a closing gate's blink starts solid from here
     death: null,    // {type: 'wall'|'self'|'obstacle'|'gate', cell, born, life}  persists until the next run
   };
 }
@@ -46,6 +47,9 @@ export function addShake(fx, now, ms = FX.shakeMs, mag = FX.shakeMag) {
 export function addDeath(fx, cause, now) {
   fx.death = { type: cause.type, cell: { ...cause.cell }, born: now, life: DEATH.flashMs };
 }
+
+// The gates just swapped: the closing set's blink restarts from this moment.
+export function addGateSwap(fx, now) { fx.gateSwapAt = now; }
 
 // A ring where an obstacle just landed: it appears mid-run, so it must announce itself.
 export function addObstacle(fx, cell, now) {

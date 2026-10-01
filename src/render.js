@@ -120,8 +120,8 @@ function drawTail(ctx, L, last, snake, board) {
   const px = -d.y, py = d.x;
   ctx.save();
   // The tip may never paint on a wall block, whatever the slide's phase: clip to the board with
-  // every wall cell and every closed gate punched out (even-odd), so the geometry can stay anchored to the animated
-  // tail position without a per-cell special case.
+  // every wall cell and every closed gate punched out (even-odd), so the geometry can stay
+  // anchored to the animated tail position without a per-cell special case.
   ctx.beginPath();
   ctx.rect(L.ox, L.oy, L.cols * cell, L.rows * cell);
   if (board && board.walls) {
@@ -217,11 +217,13 @@ function drawWallCells(ctx, L, board) {
 // A gate: a solid block in its set's colour when closed, a dashed outline of the same colour when
 // open — so the player sees where it will shut — and the two alternating while it closes. No
 // stripes and no glow: those belong to obstacles and the frame.
-function drawGates(ctx, L, board, now) {
+function drawGates(ctx, L, board, fx, now) {
   if (!board.gates || board.gates.length === 0) return;
   const cell = L.cell, pad = cell * 0.06, size = cell - pad * 2, r = cell * 0.16;
-  const blinkOn = Math.floor(now / 150) % 2 === 0;
+  // The blink is anchored to the swap, so a closing gate starts solid at the moment of the bite.
+  const blinkOn = Math.floor((now - (fx.gateSwapAt ?? 0)) / GATE.blinkMs) % 2 === 0;
   ctx.save();
+  ctx.lineWidth = Math.max(2, cell * 0.06);
   for (const g of board.gates) {
     const px = L.ox + g.x * cell + pad, py = L.oy + g.y * cell + pad;
     const color = GATE.colors[g.set];
@@ -232,7 +234,6 @@ function drawGates(ctx, L, board, now) {
       ctx.fill();
     } else {
       ctx.strokeStyle = color;
-      ctx.lineWidth = Math.max(2, cell * 0.06);
       ctx.setLineDash([cell * 0.12, cell * 0.1]);
       roundRect(ctx, px, py, size, size, r);
       ctx.stroke();
@@ -357,7 +358,7 @@ function drawSnake(ctx, L, snake, pos) {
   drawEyes(ctx, h.px + L.cell / 2, h.py + L.cell / 2, L.cell, nextDirection(snake));
 }
 
-// The cell the head tried to enter: a red pulse on a body cell, or a red bar on
+// The cell the head tried to enter: a red pulse on a body, obstacle or gate cell, or a red bar on
 // the wall edge it crossed. Pulses for DEATH.flashMs, then stays lit.
 function drawDeath(ctx, L, fx, now) {
   const d = fx.death;
@@ -457,7 +458,7 @@ export function draw(ctx, view, game, fx, now, motion, hint = false) {
   drawBoard(ctx, L);
   drawWalls(ctx, L);
   drawWallCells(ctx, L, game.board);
-  drawGates(ctx, L, game.board, now);
+  drawGates(ctx, L, game.board, fx, now);
   drawTail(ctx, L, pos[pos.length - 1], game.snake, game.board); // under the tiles: a tile behind the tail covers the tip
   drawObstacles(ctx, L, game.board, now);
   drawTiles(ctx, L, game.board.tiles);
