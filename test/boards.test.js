@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BOARDS, parseBoard, isValidBoard } from '../src/boards.js';
-import { GRID } from '../src/constants.js';
+import { GRID, GATE } from '../src/constants.js';
 
 test('every shipped board is 7x11, has one start, and every free cell is reachable', () => {
   for (const [key, b] of Object.entries(BOARDS)) {
@@ -72,4 +72,16 @@ test('isValidBoard: every cell reachable with all gates open, and room to start 
   // A gate may not stand directly ahead of the start.
   const blocked = BOARDS.open.rows.map((r, i) => (i === 4 ? '...A...' : r));
   assert.equal(isValidBoard(blocked), false);
+});
+
+test('isValidBoard: the start area with B closed must be at least GATE.minStartArea cells', () => {
+  // The two left columns (22 cells) are cut off by a wall column whose only gap at row 5 is a B gate.
+  // Walls at (0,0) and (0,1) leave 20 cells for the start with B closed; one more at (0,2) leaves 19.
+  const room = tops => ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+    .map((_, y) => (tops.includes(y) ? '#' : '.') + (y === 5 ? 'SB' : '.#') + '....');
+  const enough = room([0, 1]);
+  const short = room([0, 1, 2]);
+  assert.equal(GATE.minStartArea, 20, 'the boards below are counted against 20');
+  assert.equal(isValidBoard(enough), true, 'exactly 20 cells');
+  assert.equal(isValidBoard(short), false, '19 cells');
 });

@@ -146,7 +146,8 @@ export function isValidBoard(rows) {
 }
 
 // key -> { key, name, rows (the strings), walls, gates, start, cols }. Validated at module load: a
-// shipped board that is the wrong size, has no reachable start, or seals off a pocket throws here
+// shipped board that is the wrong size, has no reachable start, seals off a pocket, has a gate
+// directly ahead of the start, or boxes the start in behind closed gates throws here
 // instead of shipping a level the player (or a tile spawn) can never actually reach.
 export const BOARDS = Object.fromEntries(Object.entries(ROWS).map(([key, { name, rows }]) => {
   if (!isValidBoard(rows)) {
