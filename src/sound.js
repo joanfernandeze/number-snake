@@ -66,9 +66,10 @@ export function playEat() {
 
 // The gates swapping: two quick clicks, high then lower, like a latch — distinct from the eat blip
 // it follows, so the ear learns that this bite moved the doors.
+// Quieter than it looks: a 520 Hz square sits in the ear's most sensitive range and would read louder than the triangle eat blip.
 export function playGateSwap() {
-  tone(SOUND.gateHz, 60, { type: 'square', gain: SOUND.gain * 0.5 });
-  tone(SOUND.gateHz * 0.75, 60, { type: 'square', gain: SOUND.gain * 0.5, delay: 0.07 });
+  tone(SOUND.gateHz, 60, { type: 'square', gain: SOUND.gain * 0.35 });
+  tone(SOUND.gateHz * 0.75, 60, { type: 'square', gain: SOUND.gain * 0.35, delay: 0.07 });
 }
 
 // One note per merge, climbing and slightly staggered, so the ear hears the length of the chain.
