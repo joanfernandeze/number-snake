@@ -389,3 +389,53 @@ test('every difficulty keeps its spawn decay strictly inside (0, 1): low end hea
     assert.ok(cfg.decay > 0 && cfg.decay < 1, `${cfg.name} decay ${cfg.decay}`);
   }
 });
+
+// Row 3 holds one gate at (3,3) in the given set; the start is (3,5) heading up.
+function gateGame(set) {
+  const rows = ['.......', '.......', '.......', `...${set}...`, '.......', '...S...',
+    '.......', '.......', '.......', '.......', '.......'];
+  const g = createGame(createRng(1), DIFFICULTIES.classic, { board: parseBoard(rows) });
+  g.board.tiles = []; // no accidental bite: these tests place every tile by hand
+  startRun(g);
+  return g;
+}
+
+test('a closed gate kills with cause gate', () => {
+  const g = gateGame('B');
+  assert.equal(step(g).over, false);        // (3,4)
+  const ev = step(g);                        // (3,3) is closed
+  assert.equal(ev.over, true);
+  assert.equal(ev.cause.type, 'gate');
+  assert.deepEqual(ev.cause.cell, { x: 3, y: 3 });
+});
+
+test('eating swaps the gates, so a closed gate ahead opens', () => {
+  const g = gateGame('B');
+  g.board.tiles = [{ x: 3, y: 4, value: 4 }];
+  const ev = step(g);
+  assert.equal(ev.ate, true);
+  assert.equal(ev.swapped, true);
+  g.board.tiles = [];
+  assert.equal(step(g).over, false, 'B is open now');
+  assert.deepEqual(g.snake.cells[0], { x: 3, y: 3 });
+});
+
+test('a closing gate can be crossed, and shuts only once the body has left it', () => {
+  const g = gateGame('A');                      // A starts open
+  g.board.tiles = [{ x: 3, y: 4, value: 4 }];   // value 4 on a head of 2: no merge, length 2
+  step(g);                                      // eat at (3,4): A starts closing
+  g.board.tiles = [];
+  assert.equal(g.board.gates[0].state, 'closing');
+  assert.equal(step(g).over, false, 'onto the closing gate'); // head (3,3)
+  step(g);                                      // head (3,2), the tail still on (3,3)
+  assert.equal(g.board.gates[0].state, 'closing', 'the body is on it');
+  step(g);                                      // head (3,1): (3,3) is free
+  assert.equal(g.board.gates[0].state, 'closed');
+});
+
+test('a board without gates never reports a swap', () => {
+  const g = createGame(createRng(1), DIFFICULTIES.classic);
+  g.board.tiles = [{ x: 3, y: 4, value: 2 }];
+  startRun(g);
+  assert.equal(step(g).swapped, false);
+});

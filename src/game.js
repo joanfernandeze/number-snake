@@ -46,11 +46,12 @@ function spawnRef(game) {
   return game.cfg.window === 'head' ? game.snake.values[0] : Snake.maxValue(game.snake);
 }
 
-// opts.board: a parsed board from boards.js ({ walls, start }); default is the open board with the
+// opts.board: a parsed board from boards.js ({ walls, gates, start }); default is the open board with the
 // snake starting in the centre, exactly as before the campaign.
 export function createGame(rng, cfg = DIFFICULTIES[DEFAULT_DIFFICULTY], opts = {}) {
   const shaped = opts.board || null;
-  const board = Board.createBoard(GRID.cols, GRID.rows, shaped ? new Set(shaped.walls) : new Set());
+  const board = Board.createBoard(GRID.cols, GRID.rows,
+    shaped ? new Set(shaped.walls) : new Set(), shaped && shaped.gates ? shaped.gates : []);
   const start = shaped ? { ...shaped.start } : { x: Math.floor(GRID.cols / 2), y: Math.floor(GRID.rows / 2) };
   const snake = Snake.createSnake(START.snakeLength, START.snakeValue, start, START.direction);
   const game = {
@@ -93,7 +94,7 @@ export function currentTarget(game) {
 }
 
 // Advance the game by one tick. Returns an event object for render/FX:
-//   { over, ate, merges, gained, cell, cause }
+//   { over, ate, merges, gained, cell, cause, swapped }
 export function step(game) {
   if (game.over) return { over: true };
   if (!game.started) return { over: false, waiting: true };
@@ -121,6 +122,12 @@ export function step(game) {
     return { over: true, cause: game.lastCause, armed };
   }
 
+  if (Board.closedGateAt(b, next.x, next.y)) {
+    game.over = true;
+    game.lastCause = { type: 'gate', cell: next };
+    return { over: true, cause: game.lastCause, armed };
+  }
+
   const tile = Board.tileAt(b, next.x, next.y);
   const willEat = !!tile;
 
@@ -140,6 +147,10 @@ export function step(game) {
     if (r.merges > game.bestCombo) game.bestCombo = r.merges;
     const mv = Snake.maxValue(s);
     if (mv > game.bestTile) game.bestTile = mv;
+    // Gates count down on the new position, then the bite swaps them — before the refill, so a new
+    // tile only lands where the head can reach once the swap has happened.
+    Board.tickGates(b, s.cells);
+    const swapped = Board.swapGates(b);
     // One obstacle every cfg.obstacleEvery tiles, up to the cap. It goes down before the
     // tiles refill so it has the whole free board to choose from.
     let obstacle = null;
@@ -148,9 +159,10 @@ export function step(game) {
       obstacle = Board.spawnObstacle(b, game.rng, s.cells, s.cells[0]);
     }
     Board.refill(b, game.rng, spawnRef(game), s.cells, game.cfg.maxTiles, game.cfg.decay, game.cfg.span);
-    return { over: false, ate: true, merges: r.merges, gained: r.gained, cell: next, obstacle, armed, relief };
+    return { over: false, ate: true, merges: r.merges, gained: r.gained, cell: next, obstacle, armed, relief, swapped };
   }
 
   Snake.move(s);
-  return { over: false, ate: false, merges: 0, gained: 0, cell: next, obstacle: null, armed, relief: false };
+  Board.tickGates(b, s.cells);
+  return { over: false, ate: false, merges: 0, gained: 0, cell: next, obstacle: null, armed, relief: false, swapped: false };
 }
