@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
 import {
   createBoard, tileAt, removeTile, pickValue, spawnTile, refill, spawnObstacle, obstacleAt,
-  armedObstacleAt, armObstacles, wallAt,
+  armedObstacleAt, armObstacles, wallAt, gateAt, closedGateAt, swapGates, tickGates, reachableFrom,
 } from '../src/board.js';
-import { OBSTACLE } from '../src/constants.js';
+import { OBSTACLE, GATE } from '../src/constants.js';
 
 test('createBoard has the given size and no tiles', () => {
   const b = createBoard(7, 11);
@@ -206,4 +206,72 @@ test('refill and spawnTile pass the window through', () => {
   const b2 = createBoard(7, 11);
   const t = spawnTile(b2, createRng(4), 64, [], 0.8, 2);
   assert.ok([32, 64].includes(t.value), `span 2 spawns 32 or 64, got ${t.value}`);
+});
+
+const GATES = [{ x: 2, y: 3, set: 'A' }, { x: 4, y: 3, set: 'B' }];
+
+test('createBoard starts set A open and set B closed', () => {
+  const b = createBoard(7, 11, new Set(), GATES);
+  assert.equal(b.openSet, 'A');
+  assert.equal(gateAt(b, 2, 3).state, 'open');
+  assert.equal(gateAt(b, 4, 3).state, 'closed');
+  assert.equal(closedGateAt(b, 2, 3), null, 'an open gate does not block');
+  assert.ok(closedGateAt(b, 4, 3));
+  assert.equal(gateAt(b, 0, 0), null);
+  assert.deepEqual(createBoard(7, 11).gates, [], 'a board without gates has an empty list');
+});
+
+test('swapGates opens the closed set at once and starts the open set closing', () => {
+  const b = createBoard(7, 11, new Set(), GATES);
+  assert.equal(swapGates(b), true);
+  assert.equal(b.openSet, 'B');
+  assert.equal(gateAt(b, 4, 3).state, 'open');
+  assert.equal(gateAt(b, 2, 3).state, 'closing');
+  assert.equal(gateAt(b, 2, 3).warn, GATE.warnTicks);
+  assert.equal(closedGateAt(b, 2, 3), null, 'a closing gate can still be crossed');
+  swapGates(b); // eaten again before A finished closing: A reopens, B starts closing
+  assert.equal(gateAt(b, 2, 3).state, 'open');
+  assert.equal(gateAt(b, 4, 3).state, 'closing');
+  assert.equal(swapGates(createBoard(7, 11)), false, 'nothing to swap on a board without gates');
+});
+
+test('tickGates turns a closing gate solid after warnTicks moves, never under the snake', () => {
+  const b = createBoard(7, 11, new Set(), GATES);
+  swapGates(b);
+  const away = [{ x: 6, y: 10 }];
+  for (let i = 1; i < GATE.warnTicks; i++) assert.deepEqual(tickGates(b, away), []);
+  assert.deepEqual(tickGates(b, away), [{ x: 2, y: 3 }]);
+  assert.equal(gateAt(b, 2, 3).state, 'closed');
+
+  const c = createBoard(7, 11, new Set(), GATES);
+  swapGates(c);
+  const onGate = [{ x: 2, y: 3 }];
+  for (let i = 0; i < GATE.warnTicks + 3; i++) tickGates(c, onGate);
+  assert.equal(gateAt(c, 2, 3).state, 'closing', 'it waits while the body is on it');
+  assert.deepEqual(tickGates(c, away), [{ x: 2, y: 3 }], 'and shuts on the first move it is free');
+});
+
+test('reachableFrom stops at walls, closed or closing gates and armed obstacles, not at the body', () => {
+  // Row 3 is a wall with one B gate: with B closed the head cannot see the top three rows.
+  const walls = new Set(['0,3', '1,3', '2,3', '4,3', '5,3', '6,3']);
+  const b = createBoard(7, 11, walls, [{ x: 3, y: 3, set: 'B' }]);
+  const r = reachableFrom(b, { x: 3, y: 6 });
+  assert.equal(r.has('3,2'), false);
+  assert.equal(r.has('3,3'), false);
+  assert.equal(r.size, 7 * 7, 'rows 4-10');
+  swapGates(b);
+  assert.equal(reachableFrom(b, { x: 3, y: 6 }).has('3,2'), true, 'open B joins the halves');
+});
+
+test('tiles and obstacles never land on a gate, and tiles never in a sealed region', () => {
+  const tiny = createBoard(2, 1, new Set(), [{ x: 1, y: 0, set: 'A' }]);
+  assert.equal(spawnTile(tiny, createRng(1), 2, [{ x: 0, y: 0 }]), null, 'the only free cell is a gate');
+  assert.equal(spawnObstacle(tiny, createRng(1), [{ x: 0, y: 0 }], { x: 0, y: 0 }, 0), null);
+
+  const walls = new Set(['0,3', '1,3', '2,3', '4,3', '5,3', '6,3']);
+  for (let seed = 1; seed <= 40; seed++) {
+    const b = createBoard(7, 11, walls, [{ x: 3, y: 3, set: 'B' }]);
+    refill(b, createRng(seed), 8, [{ x: 3, y: 6 }], 6, 0.5, 4);
+    for (const t of b.tiles) assert.ok(t.y > 3, `seed ${seed}: tile at ${t.x},${t.y} is behind the closed gate`);
+  }
 });

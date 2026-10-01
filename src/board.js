@@ -1,10 +1,16 @@
-import { GRID, SPAWN, OBSTACLE } from './constants.js';
+import { GRID, SPAWN, OBSTACLE, GATE } from './constants.js';
 import { randInt } from './rng.js';
 
 // walls: Set<'x,y'> of cells that are part of the board's shape. Lethal like the frame, and
-// nothing ever spawns on them.
-export function createBoard(cols = GRID.cols, rows = GRID.rows, walls = new Set()) {
-  return { cols, rows, tiles: [], obstacles: [], walls }; // tiles: [{x, y, value}], obstacles: [{x, y}]
+// nothing ever spawns on them. gates: [{x, y, set}] from a parsed board; set A starts open and set
+// B closed, eating swaps them (swapGates) and a closing gate turns solid a few moves later
+// (tickGates). openSet names the set that is open now.
+export function createBoard(cols = GRID.cols, rows = GRID.rows, walls = new Set(), gates = []) {
+  return {
+    cols, rows, tiles: [], obstacles: [], walls, // tiles: [{x, y, value}], obstacles: [{x, y}]
+    gates: gates.map(g => ({ x: g.x, y: g.y, set: g.set, state: g.set === 'A' ? 'open' : 'closed', warn: 0 })),
+    openSet: 'A',
+  };
 }
 
 export function wallAt(board, x, y) {
@@ -17,6 +23,67 @@ export function tileAt(board, x, y) {
 
 export function obstacleAt(board, x, y) {
   return board.obstacles.find(o => o.x === x && o.y === y) || null;
+}
+
+export function gateAt(board, x, y) {
+  return (board.gates || []).find(g => g.x === x && g.y === y) || null;
+}
+
+// Only a closed gate stops the snake; an open or a closing one can be crossed.
+export function closedGateAt(board, x, y) {
+  const g = gateAt(board, x, y);
+  return g && g.state === 'closed' ? g : null;
+}
+
+// Eating swaps the sets: the closed set opens at once and the open set starts closing, crossable
+// for GATE.warnTicks more moves. A set still closing from the previous swap simply reopens.
+// Returns whether anything swapped (false on a board without gates).
+export function swapGates(board) {
+  if (!board.gates || board.gates.length === 0) return false;
+  board.openSet = board.openSet === 'A' ? 'B' : 'A';
+  for (const g of board.gates) {
+    if (g.set === board.openSet) { g.state = 'open'; g.warn = 0; }
+    else { g.state = 'closing'; g.warn = GATE.warnTicks; }
+  }
+  return true;
+}
+
+// One move has passed: every closing gate counts down and turns solid once its count is spent and
+// no part of the snake is on it. One under the snake keeps blinking until the cell is free, so a
+// gate never shuts on the body. Returns the cells that just turned solid.
+export function tickGates(board, snakeCells) {
+  const closed = [];
+  for (const g of board.gates || []) {
+    if (g.state !== 'closing') continue;
+    if (g.warn > 0) g.warn -= 1;
+    if (g.warn > 0) continue;
+    if (snakeCells.some(c => c.x === g.x && c.y === g.y)) continue;
+    g.state = 'closed';
+    closed.push({ x: g.x, y: g.y });
+  }
+  return closed;
+}
+
+// Cells the head can get to right now: walls, gates that are not open and armed obstacles block;
+// the snake's own body does not, because it moves out of the way. Keeps a tile from spawning in a
+// region a closed gate has sealed off.
+export function reachableFrom(board, head) {
+  const key = (x, y) => `${x},${y}`;
+  const seen = new Set([key(head.x, head.y)]);
+  const queue = [head];
+  for (let i = 0; i < queue.length; i++) {
+    const { x, y } = queue[i];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy, k = key(nx, ny);
+      if (nx < 0 || ny < 0 || nx >= board.cols || ny >= board.rows || seen.has(k)) continue;
+      if (wallAt(board, nx, ny) || armedObstacleAt(board, nx, ny)) continue;
+      const g = gateAt(board, nx, ny);
+      if (g && g.state !== 'open') continue;
+      seen.add(k);
+      queue.push({ x: nx, y: ny });
+    }
+  }
+  return seen;
 }
 
 export function removeTile(board, x, y) {
@@ -46,16 +113,19 @@ export function pickValue(rng, maxValue, decay = SPAWN.decay, base = SPAWN.baseV
 }
 
 function isOccupied(board, snakeCells, x, y) {
-  if (wallAt(board, x, y) || tileAt(board, x, y) || obstacleAt(board, x, y)) return true;
+  if (wallAt(board, x, y) || gateAt(board, x, y) || tileAt(board, x, y) || obstacleAt(board, x, y)) return true;
   return snakeCells.some(c => c.x === x && c.y === y);
 }
 
-// Spawn one tile on a random empty cell. Returns the tile, or null if the board is full.
+// Spawn one tile on a random empty cell. Returns the tile, or null if the board is full. On a board
+// with gates a tile only lands where the head can reach now; a board without gates skips that
+// search, so its spawns — and every seeded run on it — are exactly what they were before gates.
 export function spawnTile(board, rng, maxValue, snakeCells, decay, span) {
+  const reach = board.gates && board.gates.length && snakeCells.length ? reachableFrom(board, snakeCells[0]) : null;
   const empties = [];
   for (let y = 0; y < board.rows; y++) {
     for (let x = 0; x < board.cols; x++) {
-      if (!isOccupied(board, snakeCells, x, y)) empties.push({ x, y });
+      if (!isOccupied(board, snakeCells, x, y) && (!reach || reach.has(`${x},${y}`))) empties.push({ x, y });
     }
   }
   if (empties.length === 0) return null;
