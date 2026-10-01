@@ -49,3 +49,27 @@ test('isValidBoard rejects a wall directly ahead of the start, and a start on ro
 // the throw without breaking a shipped board. Verified by hand instead: copy src/boards.js to a
 // scratch file, corrupt one shipped board's rows (wrong width), `node -e` import it, confirm the
 // module throws at load time, then discard the scratch copy — never commit that broken variant.
+
+const DOOR = ['.......', '.......', '.......', '##A#B##', '.......', '...S...',
+  '.......', '.......', '.......', '.......', '.......'];
+
+test('parseBoard reads A and B as gates in two sets, not as walls', () => {
+  const b = parseBoard(DOOR);
+  assert.deepEqual(b.gates, [{ x: 2, y: 3, set: 'A' }, { x: 4, y: 3, set: 'B' }]);
+  assert.equal(b.walls.size, 5);
+  assert.equal(b.walls.has('2,3'), false, 'a gate is not a wall');
+  assert.deepEqual(parseBoard(BOARDS.open.rows).gates, []);
+  assert.throws(() => parseBoard(DOOR.map((r, i) => (i === 0 ? 'C......' : r))), /bad board character/);
+});
+
+test('isValidBoard: every cell reachable with all gates open, and room to start with B closed', () => {
+  assert.equal(isValidBoard(DOOR), true);
+  // A 3x3 room around the start whose only way out is a B gate: 9 cells with B closed, under 20.
+  const boxed = ['.......', '.......', '.......', '.#####.', '.#...#.', '.#.S.#.',
+    '.#...#.', '.##B##.', '.......', '.......', '.......'];
+  assert.equal(isValidBoard(boxed), false, 'start area too small while B is closed');
+  assert.equal(isValidBoard(boxed.map(r => r.replace('B', 'A'))), true, 'the same room with an open A gate');
+  // A gate may not stand directly ahead of the start.
+  const blocked = BOARDS.open.rows.map((r, i) => (i === 4 ? '...A...' : r));
+  assert.equal(isValidBoard(blocked), false);
+});

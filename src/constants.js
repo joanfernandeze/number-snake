@@ -105,6 +105,14 @@ export const WALL_COLORS = {
   edge: '#3d4a78',
 };
 
+// Gates: board cells in two sets that swap when the snake eats (spec 2026-09-30 §2). Set A starts
+// open, set B closed; a closing gate can still be crossed for warnTicks moves.
+export const GATE = {
+  warnTicks: 2,       // moves a closing gate can still be crossed before it turns solid
+  minStartArea: 20,   // free cells the start must reach with set A open and set B closed
+  colors: { A: '#fde047', B: '#c4b5fd' }, // paler than every tile colour; a gate never carries a number
+};
+
 export const STORAGE_KEY = 'numberSnake.best';
 
 export const INPUT = {
