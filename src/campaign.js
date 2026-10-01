@@ -17,8 +17,8 @@ const time = (value) => ({ type: 'time', value });
 export const ACTS = ['Learn', 'Pressure', 'Mastery', 'Gates', 'Crossings', 'Vault'];
 
 // Goals and tile/chain stars are design — a doubling ladder per act, capped at 256; the eats/time
-// values are set by tools/simulate.js --campaign (spec 2026-09-15 §3). Levels 13-24 carry starting
-// values until they are calibrated.
+// values are set by tools/simulate.js --campaign (spec 2026-09-15 §3). Levels 13-24 were calibrated
+// the same way on 2026-10-01 (docs/PLAYTEST.md, "Campaign calibration").
 export const LEVELS = [
   { id: 1,  act: 1, board: 'open',     speed: 'classic', obstacleEvery: 0,  goal: tile(64),     stars: [eats(18), chain(3)],  matchHint: true, maxTiles: 4 },
   { id: 2,  act: 1, board: 'pillars',  speed: 'classic', obstacleEvery: 0,  goal: tile(128),    stars: [eats(24), time(45)] },
@@ -33,17 +33,17 @@ export const LEVELS = [
   { id: 11, act: 3, board: 'ring',     speed: 'frenzy',  obstacleEvery: 15, goal: collect(40),  stars: [tile(128), chain(3)] },
   { id: 12, act: 3, board: 'ring',     speed: 'frenzy',  obstacleEvery: 10, goal: tile(256),    stars: [eats(28), chain(4)] },
   { id: 13, act: 4, board: 'door',     speed: 'classic', obstacleEvery: 0,  goal: tile(64),     stars: [eats(18), chain(3)] },
-  { id: 14, act: 4, board: 'door',     speed: 'classic', obstacleEvery: 0,  goal: tile(128),    stars: [eats(24), time(45)] },
-  { id: 15, act: 4, board: 'locks',    speed: 'classic', obstacleEvery: 0,  goal: chain(3),     stars: [eats(14), tile(128)] },
-  { id: 16, act: 4, board: 'locks',    speed: 'classic', obstacleEvery: 0,  goal: tile(256),    stars: [eats(30), chain(3)] },
-  { id: 17, act: 5, board: 'halves',   speed: 'classic', obstacleEvery: 15, goal: tile(128),    stars: [eats(24), time(50)] },
+  { id: 14, act: 4, board: 'door',     speed: 'classic', obstacleEvery: 0,  goal: tile(128),    stars: [eats(24), time(40)] },
+  { id: 15, act: 4, board: 'locks',    speed: 'classic', obstacleEvery: 0,  goal: chain(3),     stars: [eats(10), tile(64)] },
+  { id: 16, act: 4, board: 'locks',    speed: 'classic', obstacleEvery: 0,  goal: tile(256),    stars: [eats(26), chain(3)] },
+  { id: 17, act: 5, board: 'halves',   speed: 'classic', obstacleEvery: 15, goal: tile(128),    stars: [eats(22), time(50)] },
   { id: 18, act: 5, board: 'halves',   speed: 'classic', obstacleEvery: 15, goal: collect(40),  stars: [tile(128), chain(3)] },
-  { id: 19, act: 5, board: 'rooms',    speed: 'classic', obstacleEvery: 20, goal: chain(4),     stars: [eats(26), tile(128)] },
+  { id: 19, act: 5, board: 'rooms',    speed: 'classic', obstacleEvery: 20, goal: chain(3),     stars: [eats(10), tile(64)] },
   { id: 20, act: 5, board: 'rooms',    speed: 'classic', obstacleEvery: 15, goal: tile(256),    stars: [eats(26), chain(3)] },
-  { id: 21, act: 6, board: 'rooms',    speed: 'frenzy',  obstacleEvery: 15, goal: tile(128),    stars: [eats(24), time(40)] },
-  { id: 22, act: 6, board: 'vault',    speed: 'frenzy',  obstacleEvery: 15, goal: collect(40),  stars: [tile(128), chain(3)] },
-  { id: 23, act: 6, board: 'vault',    speed: 'frenzy',  obstacleEvery: 10, goal: chain(4),     stars: [eats(16), tile(128)] },
-  { id: 24, act: 6, board: 'vault',    speed: 'frenzy',  obstacleEvery: 10, goal: tile(256),    stars: [eats(28), chain(4)] },
+  { id: 21, act: 6, board: 'rooms',    speed: 'frenzy',  obstacleEvery: 15, goal: tile(128),    stars: [eats(22), time(30)] },
+  { id: 22, act: 6, board: 'vault',    speed: 'frenzy',  obstacleEvery: 20, goal: collect(40),  stars: [tile(128), chain(3)] },
+  { id: 23, act: 6, board: 'vault',    speed: 'frenzy',  obstacleEvery: 15, goal: chain(4),     stars: [eats(18), tile(64)] },
+  { id: 24, act: 6, board: 'vault',    speed: 'frenzy',  obstacleEvery: 15, goal: tile(256),    stars: [eats(28), chain(3)] },
 ];
 
 export function levelById(id) {

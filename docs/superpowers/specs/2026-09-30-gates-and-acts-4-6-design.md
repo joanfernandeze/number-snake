@@ -90,29 +90,33 @@ The door       The locks      The halves     The rooms      The vault
 
 Acts 4–6 follow the retune's rules: goals climb a doubling ladder within each act, capped at 256;
 tile and chain stars are design; **eats and time stars are set by `tools/simulate.js --campaign`**
-(eats = p50 of eats among the bot's wins; time = p50 seconds × 1.4). The eats and time values below
-are starting points the calibration overwrites.
+(eats = p50 of eats among the bot's wins; time = p50 seconds × 1.4). The values below are the
+shipped ones, calibrated on 2026-10-01 (see `docs/PLAYTEST.md`, "Campaign calibration", for the
+per-level changes and why).
 
 | # | Act | Board | Speed | Obstacles | Goal | ★★ | ★★★ |
 | - | --- | --- | --- | --- | --- | --- | --- |
 | 13 | 4 Gates | The door | Classic | none | tile 64 | eats ≤ 18 | chain ≥ 3 |
-| 14 | 4 Gates | The door | Classic | none | tile 128 | eats ≤ 24 | time ≤ 45 s |
-| 15 | 4 Gates | The locks | Classic | none | chain 3 | eats ≤ 14 | tile ≥ 128 |
-| 16 | 4 Gates | The locks | Classic | none | tile 256 | eats ≤ 30 | chain ≥ 3 |
-| 17 | 5 Crossings | The halves | Classic | every 15 | tile 128 | eats ≤ 24 | time ≤ 50 s |
+| 14 | 4 Gates | The door | Classic | none | tile 128 | eats ≤ 24 | time ≤ 40 s |
+| 15 | 4 Gates | The locks | Classic | none | chain 3 | eats ≤ 10 | tile ≥ 64 |
+| 16 | 4 Gates | The locks | Classic | none | tile 256 | eats ≤ 26 | chain ≥ 3 |
+| 17 | 5 Crossings | The halves | Classic | every 15 | tile 128 | eats ≤ 22 | time ≤ 50 s |
 | 18 | 5 Crossings | The halves | Classic | every 15 | collect 40 | tile ≥ 128 | chain ≥ 3 |
-| 19 | 5 Crossings | The rooms | Classic | every 20 | chain 4 | eats ≤ 26 | tile ≥ 128 |
+| 19 | 5 Crossings | The rooms | Classic | every 20 | chain 3 | eats ≤ 10 | tile ≥ 64 |
 | 20 | 5 Crossings | The rooms | Classic | every 15 | tile 256 | eats ≤ 26 | chain ≥ 3 |
-| 21 | 6 Vault | The rooms | Frenzy | every 15 | tile 128 | eats ≤ 24 | time ≤ 40 s |
-| 22 | 6 Vault | The vault | Frenzy | every 15 | collect 40 | tile ≥ 128 | chain ≥ 3 |
-| 23 | 6 Vault | The vault | Frenzy | every 10 | chain 4 | eats ≤ 16 | tile ≥ 128 |
-| 24 | 6 Vault | The vault | Frenzy | every 10 | tile 256 | eats ≤ 28 | chain ≥ 4 |
+| 21 | 6 Vault | The rooms | Frenzy | every 15 | tile 128 | eats ≤ 22 | time ≤ 30 s |
+| 22 | 6 Vault | The vault | Frenzy | every 20 | collect 40 | tile ≥ 128 | chain ≥ 3 |
+| 23 | 6 Vault | The vault | Frenzy | every 15 | chain 4 | eats ≤ 18 | tile ≥ 64 |
+| 24 | 6 Vault | The vault | Frenzy | every 15 | tile 256 | eats ≤ 28 | chain ≥ 3 |
 
 The act names join `ACTS`: `['Learn', 'Pressure', 'Mastery', 'Gates', 'Crossings', 'Vault']`.
 
-**Calibration targets** (the same bar the spec of 2026-09-14 §8 sets): the bot wins at least one
-attempt in ten on acts 4–5 and one in thirty on act 6, and **no level's ★★★ holds in under 15 % of
-the bot's wins**. A level that misses is tuned on its own (obstacles, speed, goal), not its act.
+**Calibration targets:** the bot wins at least 10 % of attempts on acts 4–5 and at least 7 % on
+act 6, and **no level's ★★★ holds in under 15 % of the bot's wins**. Act 6's floor is 7 %, not
+lower, because the author asked for an easier campaign: act 6 must not be harder for the bot than
+act 3, whose levels bottom out at 7 %. A level that misses is tuned on its own (obstacles first,
+then speed, then its goal one rung down), not its act; act 6 stays Frenzy, so it is tuned by
+obstacles and goal only.
 
 ## 5. Engine and modules
 

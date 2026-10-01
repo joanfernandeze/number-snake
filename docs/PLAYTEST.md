@@ -160,15 +160,15 @@ remove a date.
 
 ## The campaign
 
-The game now opens on a **map**: three acts — Learn, Pressure, Mastery — of four levels each, plus
-the unchanged **Endless** and **Daily** one tap away (`Play level N ▸`, `Endless`, `Play Daily #N`).
+The game now opens on a **map**: six acts — Learn, Pressure, Mastery, Gates, Crossings, Vault — of
+four levels each, plus the unchanged **Endless** and **Daily** one tap away (`Play level N ▸`, `Endless`, `Play Daily #N`).
 Picking a level shows a **goal card** over the board (`Level 5 · The lanes`, the goal in large type
 e.g. `Reach 128`, the two extra-star conditions as `★★ …` / `★★★ …`, and `Swipe to start`) that lets
 gestures through, so the first swipe or arrow key dismisses it and starts the run. During a
 campaign run the HUD's right-hand stat becomes the goal (`REACH 64` / `CHAIN ×3` / `EAT 12/30`)
 instead of the best tile. Winning stops the snake at once — no death flash, no shake, a short
 rising chord — and the panel reads `Level cleared!`, the three conditions each with a ✓ or ✗ and
-the stars earned, then `Level N ▸` (`Campaign complete!` in its place after level 12) / `Retry` /
+the stars earned, then `Level N ▸` (`Campaign complete!` in its place after level 24) / `Retry` /
 `Map`. Dying reads `Level N · not cleared`, restates
 how far you got and the goal, then `Retry` / `Map`. Share on a campaign panel adds a line like
 `Number Snake · Level 5 ★★☆`.
@@ -185,25 +185,38 @@ award the second and third star:
 | `eats ≤ E`    | at most E tiles eaten so far (`E tiles or fewer`)      |
 | `time ≤ T`    | at most T seconds have passed (`Under T s`)            |
 
-The twelve levels, as shipped (`src/campaign.js`, `LEVELS`), recalibrated 2026-09-15 as a doubling
-ladder per act (64 → 128 → 256, capped at 256):
+The twenty-four levels, as shipped (`src/campaign.js`, `LEVELS`): levels 1–12 recalibrated
+2026-09-15 as a doubling ladder per act (64 → 128 → 256, capped at 256), levels 13–24 (the gate
+acts) calibrated the same way on 2026-10-01:
 
-| #  | Act      | Board        | Goal         | ★★                 | ★★★         | Speed   | Obstacles |
-| -- | -------- | ------------ | ------------ | -------------------- | ------------- | ------- | --------- |
-| 1  | Learn    | Open         | Reach 64     | 18 tiles or fewer     | Chain ×3      | Classic | none      |
-| 2  | Learn    | The pillars  | Reach 128    | 24 tiles or fewer     | Under 45 s    | Classic | none      |
-| 3  | Learn    | The pillars  | Chain ×3     | 14 tiles or fewer     | Reach 128     | Classic | none      |
-| 4  | Learn    | The pillars  | Reach 256    | 30 tiles or fewer     | Chain ×3      | Classic | none      |
-| 5  | Pressure | The lanes    | Reach 128    | 24 tiles or fewer     | Under 50 s    | Classic | every 15  |
-| 6  | Pressure | The lanes    | Eat 40 tiles | Reach 128              | Chain ×3      | Classic | every 15  |
-| 7  | Pressure | The lanes    | Chain ×4     | 26 tiles or fewer     | Reach 128     | Classic | every 20  |
-| 8  | Pressure | The chambers | Reach 256    | 26 tiles or fewer     | Chain ×3      | Classic | every 15  |
-| 9  | Mastery  | The chambers | Chain ×4     | 16 tiles or fewer     | Reach 128     | Frenzy  | every 10  |
-| 10 | Mastery  | The chambers | Reach 256    | 26 tiles or fewer     | Under 40 s    | Frenzy  | every 10  |
-| 11 | Mastery  | The ring     | Eat 40 tiles | Reach 128              | Chain ×3      | Frenzy  | every 15  |
-| 12 | Mastery  | The ring     | Reach 256    | 28 tiles or fewer     | Chain ×4      | Frenzy  | every 10  |
+| #  | Act       | Board        | Goal         | ★★                 | ★★★         | Speed   | Obstacles |
+| -- | --------- | ------------ | ------------ | -------------------- | ------------- | ------- | --------- |
+| 1  | Learn     | Open         | Reach 64     | 18 tiles or fewer     | Chain ×3      | Classic | none      |
+| 2  | Learn     | The pillars  | Reach 128    | 24 tiles or fewer     | Under 45 s    | Classic | none      |
+| 3  | Learn     | The pillars  | Chain ×3     | 14 tiles or fewer     | Reach 128     | Classic | none      |
+| 4  | Learn     | The pillars  | Reach 256    | 30 tiles or fewer     | Chain ×3      | Classic | none      |
+| 5  | Pressure  | The lanes    | Reach 128    | 24 tiles or fewer     | Under 50 s    | Classic | every 15  |
+| 6  | Pressure  | The lanes    | Eat 40 tiles | Reach 128              | Chain ×3      | Classic | every 15  |
+| 7  | Pressure  | The lanes    | Chain ×4     | 26 tiles or fewer     | Reach 128     | Classic | every 20  |
+| 8  | Pressure  | The chambers | Reach 256    | 26 tiles or fewer     | Chain ×3      | Classic | every 15  |
+| 9  | Mastery   | The chambers | Chain ×4     | 16 tiles or fewer     | Reach 128     | Frenzy  | every 10  |
+| 10 | Mastery   | The chambers | Reach 256    | 26 tiles or fewer     | Under 40 s    | Frenzy  | every 10  |
+| 11 | Mastery   | The ring     | Eat 40 tiles | Reach 128              | Chain ×3      | Frenzy  | every 15  |
+| 12 | Mastery   | The ring     | Reach 256    | 28 tiles or fewer     | Chain ×4      | Frenzy  | every 10  |
+| 13 | Gates     | The door     | Reach 64     | 18 tiles or fewer     | Chain ×3      | Classic | none      |
+| 14 | Gates     | The door     | Reach 128    | 24 tiles or fewer     | Under 40 s    | Classic | none      |
+| 15 | Gates     | The locks    | Chain ×3     | 10 tiles or fewer     | Reach 64      | Classic | none      |
+| 16 | Gates     | The locks    | Reach 256    | 26 tiles or fewer     | Chain ×3      | Classic | none      |
+| 17 | Crossings | The halves   | Reach 128    | 22 tiles or fewer     | Under 50 s    | Classic | every 15  |
+| 18 | Crossings | The halves   | Eat 40 tiles | Reach 128              | Chain ×3      | Classic | every 15  |
+| 19 | Crossings | The rooms    | Chain ×3     | 10 tiles or fewer     | Reach 64      | Classic | every 20  |
+| 20 | Crossings | The rooms    | Reach 256    | 26 tiles or fewer     | Chain ×3      | Classic | every 15  |
+| 21 | Vault     | The rooms    | Reach 128    | 22 tiles or fewer     | Under 30 s    | Frenzy  | every 15  |
+| 22 | Vault     | The vault    | Eat 40 tiles | Reach 128              | Chain ×3      | Frenzy  | every 20  |
+| 23 | Vault     | The vault    | Chain ×4     | 18 tiles or fewer     | Reach 64      | Frenzy  | every 15  |
+| 24 | Vault     | The vault    | Reach 256    | 28 tiles or fewer     | Chain ×3      | Frenzy  | every 15  |
 
-The five boards (`src/boards.js`):
+The ten boards (`src/boards.js`):
 
 | Board        | What the shape does to play                                                                    |
 | ------------ | ------------------------------------------------------------------------------------------------ |
@@ -212,6 +225,19 @@ The five boards (`src/boards.js`):
 | The lanes    | solid columns down both sides of the middle rows box most of the board into one narrow vertical corridor |
 | The chambers | one wall clean across the middle with a single gap — every route between the two halves goes through that doorway |
 | The ring     | a broken box walls the centre off from the corners — the inside loop is short, breaking out to a corner takes the long way round |
+| The door     | a wall across the middle with two doors, one of each set — one is always open, so the halves never disconnect |
+| The locks    | two walls, each with one door of its own set — eating opens the bottom part and seals the top, and back |
+| The halves   | a wall down the middle with a door of each set — the same idea on its side, starting in the left half |
+| The rooms    | two small rooms up top, each with its own door down — eating in a room swaps you into the joined rooms, eating below seals them off |
+| The vault    | an inner room and a one-cell-wide outer ring joined by four gates, two of each set — the finale's board |
+
+**Gates** (the last five boards) are cells of two sets, A and B, drawn in two colours: at the start
+A is open (a dashed outline on the floor) and B closed (a solid rounded block). Every bite swaps
+them — the closed set opens at once, the open set starts closing: a closing gate blinks for two
+moves and can still be crossed, then turns solid. Running into a closed gate ends the run like a
+wall, with its own cause, `gate`, so `/stats` shows whether gates kill too often. Tiles and
+obstacles never land on a gate, and a tile never spawns in a region the snake cannot reach at that
+moment.
 
 **Unlocking is linear:** clearing a level (one star) unlocks the next; stars never gate anything —
 they exist to bring a player back to a level, not to block one. Attempts are unlimited, and **each
@@ -222,7 +248,7 @@ leave for the map; whether they ever come back to replay a cleared level for its
 whether they read the goal card or swiped it away unread; whether a wall death feels as fair as an
 obstacle or self death; whether they understand that the small tiles have stopped coming and the
 number they carry is what spawns; whether they discover the cascade (build `2 · 4 · 8 · 16`, eat a
-2); and, if they get there, whether the finale (level 12: The ring at Frenzy speed) reads as
+2); and, if they get there, whether the finale (level 24: The vault at Frenzy speed) reads as
 hard-but-possible rather than a wall.
 
 **Testing shortcuts:** reset progress with `localStorage.removeItem('numberSnake.campaign')`; jump
@@ -240,7 +266,7 @@ The device picks exactly thirteen fields for that record, on the device, so noth
 even by accident: `daySince` (days since its first play, 0 on day one), `daysPlayed` (distinct days
 played, including today), `firstOfDay` (true on the first run of a calendar day), `mode` (`free`,
 `daily`, `practice` or `campaign`), `difficulty`, `score`, `bestTile`, `bestCombo`, `durationMs`,
-`eaten`, `firstMergeMs`, `cause` (now including `won`, on a cleared campaign level), `level` (1–12
+`eaten`, `firstMergeMs`, `cause` (now including `won`, on a cleared campaign level), `level` (1–24
 in campaign mode, `null` otherwise). The per-page-load `session` id, the absolute `endedAt` timestamp and the
 raw `ticks` count never leave the device — no identifier of any kind travels; the device keeps its
 own history under `numberSnake.device`, capped at `ANALYTICS.maxDays`. The server counts: new devices are records
@@ -342,7 +368,7 @@ Superseded by the 2026-09-15 spawn window (median best tile climbs a lot on all 
 now) — see "How tiles appear" above for the current Endless medians (Classic 512, Frenzy 128,
 Chill 256).
 
-### Campaign calibration (2026-09-15, 300 greedy-bot attempts per level)
+### Campaign calibration (2026-10-01, 300 greedy-bot attempts per level)
 
 `node tools/simulate.js --campaign --runs=300` plays every level 300 times with the greedy
 "plays for matches" policy — which path-finds around walls by breadth-first search — and prints,
@@ -373,12 +399,45 @@ not a person's — that is why goals stopped being tuned to it.
 10  The chambers  Reach 256        20     57    100
 11  The ring      Eat 40 tiles     19     78     71
 12  The ring      Reach 256        17     62     16
+13  The door      Reach 64         87     67     39
+14  The door      Reach 128        72     65     95
+15  The locks     Chain ×3         47     58     18
+16  The locks     Reach 256        12     57     68
+17  The halves    Reach 128        56     58     98
+18  The halves    Eat 40 tiles     11    100     79
+19  The rooms     Chain ×3         40     56     23
+20  The rooms     Reach 256        25     52     53
+21  The rooms     Reach 128        23     56     94
+22  The vault     Eat 40 tiles      9     64     75
+23  The vault     Chain ×4          7     57     48
+24  The vault     Reach 256         9     67     44
 ```
 
 Levels 7 and 9 (`Chain ×4`) sit under 10 % win rate for the bot because it never plans a cascade; a
 human who builds the ascending body `2 · 4 · 8 · 16` and detonates it with a 2 can clear either. A
 `survive T s` goal was tried and dropped: the bot won it by circling without eating, since nothing
 in the game ramps unless the snake eats.
+
+Levels 13–24 were calibrated against targets the first twelve were not held to: the bot wins at
+least 10 % on levels 13–20 and at least 7 % on 21–24 (the author asked for an easier campaign, so
+act 6 must not be harder for the bot than act 3, whose floor is 7 %), and ★★★ holds in at least
+15 % of wins on every level. Every `eats`/`time` star was then reset from the final p50s. The
+levels that changed beyond their eats/time stars, and why:
+
+- **Level 15** — ★★★ `Reach 128` → `Reach 64`: the bot held 128 in only 7 % of its wins (64: 18 %).
+- **Level 19** — goal `Chain ×4` → `Chain ×3` and ★★★ `Reach 128` → `Reach 64`: the bot won 5 %,
+  dying to walls rather than obstacles — dropping obstacles only reached 6 %, so the cadence stays
+  every 20 and the goal moved a rung down instead (40 %); 128 then held in only 8 % of wins (64: 23 %).
+- **Level 22** — obstacles every 15 → every 20: on the vault's one-cell ring obstacles ended 163 of
+  300 runs and the bot won 3 % (now 9 %).
+- **Level 23** — obstacles every 10 → every 15 and ★★★ `Reach 128` → `Reach 64`: win 5 % → 7 %;
+  128 held in 0 % of wins (10 % after the cadence change), 64 holds in 48 %.
+- **Level 24** — obstacles every 10 → every 15 and ★★★ `Chain ×4` → `Chain ×3`: win 3 % → 9 %; a
+  ×4 chain held in 0 % of wins (still under 15 % after the cadence change), ×3 holds in 44 %.
+
+Level 18's ★★ (`Reach 128` on `Eat 40 tiles`) holds in 100 % of the bot's wins, and the `time`
+stars of levels 14, 17 and 21 in 94–98 %: the bot moves the instant a path is clear, so the × 1.4
+margin is there for a human, not for it.
 
 ## Decision gate
 - D1 ≥ 30 % and the daily is played on a second day → the loop is a habit; the next pass can look
