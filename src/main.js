@@ -329,7 +329,7 @@ function frame(now) {
         Sound.playEat();
       }
       if (ev.obstacle) Fx.addObstacle(fx, ev.obstacle, now);
-      if (ev.swapped) Fx.addGateSwap(fx, now);
+      if (ev.swapped) { Fx.addGateSwap(fx, now); Sound.playGateSwap(); }
       // The thud lands when the block turns solid, which is the moment it starts to matter.
       if (ev.armed && ev.armed.length) Sound.playObstacle();
     }

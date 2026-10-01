@@ -66,6 +66,7 @@ export const SOUND = {
   obstacleHz: 110,
   deathHz: 160,
   winHz: 440,        // root of the victory chord; the notes climb from here
+  gateHz: 520,       // the gates swapping: a latch-like click above the eat blip
 };
 
 export const DEFAULT_DIFFICULTY = 'classic';

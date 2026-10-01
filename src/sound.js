@@ -64,6 +64,13 @@ export function playEat() {
   tone(SOUND.eatHz, 70, { type: 'triangle', gain: SOUND.gain * 0.6 });
 }
 
+// The gates swapping: two quick clicks, high then lower, like a latch — distinct from the eat blip
+// it follows, so the ear learns that this bite moved the doors.
+export function playGateSwap() {
+  tone(SOUND.gateHz, 60, { type: 'square', gain: SOUND.gain * 0.5 });
+  tone(SOUND.gateHz * 0.75, 60, { type: 'square', gain: SOUND.gain * 0.5, delay: 0.07 });
+}
+
 // One note per merge, climbing and slightly staggered, so the ear hears the length of the chain.
 export function playMerge(merges) {
   for (let i = 0; i < Math.min(merges, 6); i++) {
