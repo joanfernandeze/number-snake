@@ -1,4 +1,4 @@
-import { GRID, POWER_COLORS, FALLBACK_COLOR, FX, DEATH, OBSTACLE_COLORS, WALL_COLORS } from './constants.js';
+import { GRID, POWER_COLORS, FALLBACK_COLOR, FX, DEATH, OBSTACLE_COLORS, WALL_COLORS, GATE } from './constants.js';
 import { ageOf } from './fx.js';
 import { nextDirection } from './snake.js';
 
@@ -120,7 +120,7 @@ function drawTail(ctx, L, last, snake, board) {
   const px = -d.y, py = d.x;
   ctx.save();
   // The tip may never paint on a wall block, whatever the slide's phase: clip to the board with
-  // every wall cell punched out (even-odd), so the geometry can stay anchored to the animated
+  // every wall cell and every closed gate punched out (even-odd), so the geometry can stay anchored to the animated
   // tail position without a per-cell special case.
   ctx.beginPath();
   ctx.rect(L.ox, L.oy, L.cols * cell, L.rows * cell);
@@ -128,6 +128,11 @@ function drawTail(ctx, L, last, snake, board) {
     for (const key of board.walls) {
       const [wx, wy] = key.split(',').map(Number);
       ctx.rect(L.ox + wx * cell, L.oy + wy * cell, cell, cell);
+    }
+  }
+  if (board && board.gates) {
+    for (const g of board.gates) {
+      if (g.state === 'closed') ctx.rect(L.ox + g.x * cell, L.oy + g.y * cell, cell, cell);
     }
   }
   ctx.clip('evenodd');
@@ -205,6 +210,34 @@ function drawWallCells(ctx, L, board) {
     ctx.lineWidth = lw;
     roundRect(ctx, px + lw, py + lw, size - lw * 2, size - lw * 2, cell * 0.12);
     ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// A gate: a solid block in its set's colour when closed, a dashed outline of the same colour when
+// open — so the player sees where it will shut — and the two alternating while it closes. No
+// stripes and no glow: those belong to obstacles and the frame.
+function drawGates(ctx, L, board, now) {
+  if (!board.gates || board.gates.length === 0) return;
+  const cell = L.cell, pad = cell * 0.06, size = cell - pad * 2, r = cell * 0.16;
+  const blinkOn = Math.floor(now / 150) % 2 === 0;
+  ctx.save();
+  for (const g of board.gates) {
+    const px = L.ox + g.x * cell + pad, py = L.oy + g.y * cell + pad;
+    const color = GATE.colors[g.set];
+    const solid = g.state === 'closed' || (g.state === 'closing' && blinkOn);
+    if (solid) {
+      ctx.fillStyle = color;
+      roundRect(ctx, px, py, size, size, r);
+      ctx.fill();
+    } else {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(2, cell * 0.06);
+      ctx.setLineDash([cell * 0.12, cell * 0.1]);
+      roundRect(ctx, px, py, size, size, r);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
   }
   ctx.restore();
 }
@@ -334,7 +367,7 @@ function drawDeath(ctx, L, fx, now) {
   ctx.fillStyle = on ? 'rgba(239,68,68,0.9)' : 'rgba(239,68,68,0.25)';
   const c = d.cell;
   const inside = c && c.x >= 0 && c.y >= 0 && c.x < L.cols && c.y < L.rows;
-  if (d.type === 'self' || d.type === 'obstacle' || (d.type === 'wall' && inside)) {
+  if (d.type === 'self' || d.type === 'obstacle' || d.type === 'gate' || (d.type === 'wall' && inside)) {
     roundRect(ctx, L.ox + c.x * L.cell, L.oy + c.y * L.cell, L.cell, L.cell, L.cell * 0.22);
     ctx.fill();
     return;
@@ -424,6 +457,7 @@ export function draw(ctx, view, game, fx, now, motion, hint = false) {
   drawBoard(ctx, L);
   drawWalls(ctx, L);
   drawWallCells(ctx, L, game.board);
+  drawGates(ctx, L, game.board, now);
   drawTail(ctx, L, pos[pos.length - 1], game.snake, game.board); // under the tiles: a tile behind the tail covers the tip
   drawObstacles(ctx, L, game.board, now);
   drawTiles(ctx, L, game.board.tiles);

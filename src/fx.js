@@ -8,7 +8,7 @@ export function createFx() {
     bursts: [],     // {text, x, y, level, color, born, life} "Merge!" text rising from the cell
     particles: [],  // {x, y, vx, vy, color, born, life}   x/y in cells, vx/vy in cells per second
     shake: null,    // {until, mag}
-    death: null,    // {type: 'wall'|'self'|'obstacle', cell, born, life}  persists until the next run
+    death: null,    // {type: 'wall'|'self'|'obstacle'|'gate', cell, born, life}  persists until the next run
   };
 }
 
