@@ -267,7 +267,7 @@ The device picks exactly thirteen fields for that record, on the device, so noth
 even by accident: `daySince` (days since its first play, 0 on day one), `daysPlayed` (distinct days
 played, including today), `firstOfDay` (true on the first run of a calendar day), `mode` (`free`,
 `daily`, `practice` or `campaign`), `difficulty`, `score`, `bestTile`, `bestCombo`, `durationMs`,
-`eaten`, `firstMergeMs`, `cause` (now including `won`, on a cleared campaign level), `level` (1–24
+`eaten`, `firstMergeMs`, `cause` (`wall`, `self`, `obstacle`, `gate`, or `won` on a cleared campaign level), `level` (1–24
 in campaign mode, `null` otherwise). The per-page-load `session` id, the absolute `endedAt` timestamp and the
 raw `ticks` count never leave the device — no identifier of any kind travels; the device keeps its
 own history under `numberSnake.device`, capped at `ANALYTICS.maxDays`. The server counts: new devices are records

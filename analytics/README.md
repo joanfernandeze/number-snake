@@ -33,6 +33,12 @@ on an earlier redeploy, run 2 and 3 only.
 
 A fresh install gets both columns from `schema.sql` and needs only step 3.
 
+## Upgrading an existing deployment (gates, 2026-09-30)
+
+Campaign levels 13-24 can end with `cause: 'gate'`. A Worker deployed before this rejects those
+runs, so redeploy **before** pushing the game: `npm run deploy` from `analytics/`. No schema change:
+`cause` is already a free-text column.
+
 ## Read the numbers
 
 `https://number-snake-analytics.<you>.workers.dev/stats?key=<STATS_KEY>` returns:

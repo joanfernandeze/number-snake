@@ -2,7 +2,7 @@
 // payload cannot reach the table, and only whitelisted fields are copied out.
 const MODES = new Set(['free', 'daily', 'practice', 'campaign']);
 const LEVELS = new Set(['chill', 'classic', 'frenzy']);
-const CAUSES = new Set(['wall', 'self', 'obstacle', 'won']);
+const CAUSES = new Set(['wall', 'self', 'obstacle', 'gate', 'won']);
 const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 const optionalInt = (v, lo, hi) => v === null || v === undefined || int(v, lo, hi);
 

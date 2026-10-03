@@ -5,7 +5,7 @@ import { TELEMETRY } from './constants.js';
 //
 // A run record: { session, difficulty, mode: 'free'|'daily'|'practice'|'campaign', level: 1-24|null,
 //                 stars: 0-3|null, firstMergeMs|null, durationMs, ticks, eaten, score, bestTile, bestCombo,
-//                 cause: 'wall'|'self'|'obstacle'|'won', endedAt }, as produced by `buildRun`.
+//                 cause: 'wall'|'self'|'obstacle'|'gate'|'won', endedAt }, as produced by `buildRun`.
 // `session` is one page load, so runs-per-session approximates "runs per player".
 
 export function loadRuns(storage = globalThis.localStorage, key = TELEMETRY.storageKey) {

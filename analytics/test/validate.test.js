@@ -69,3 +69,10 @@ test('stars: 0-3 for a campaign run, null otherwise, nothing else', () => {
   assert.equal(validateRun({ ...won, stars: '3' }), null);
   assert.equal(Object.keys(validateRun(won)).length, 14, 'thirteen fields plus stars');
 });
+
+test('a run that ends on a gate is accepted with cause gate', () => {
+  const r = validateRun({ ...good, mode: 'campaign', cause: 'gate', level: 13 });
+  assert.ok(r);
+  assert.equal(r.cause, 'gate');
+  assert.equal(r.level, 13);
+});
