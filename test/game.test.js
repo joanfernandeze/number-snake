@@ -7,6 +7,7 @@ import {
 } from '../src/game.js';
 import { SPAWN, TIMING, START, DIFFICULTIES, DEFAULT_DIFFICULTY, OBSTACLE, RELIEF } from '../src/constants.js';
 import { parseBoard, BOARDS } from '../src/boards.js';
+import { reachableFrom } from '../src/board.js';
 
 const UP = { x: 0, y: -1 }, DOWN = { x: 0, y: 1 };
 
@@ -457,4 +458,48 @@ test('the closing window ends on the third move after the bite', () => {
   assert.equal(ev.over, true);
   assert.equal(ev.cause.type, 'gate');
   assert.deepEqual(ev.cause.cell, { x: 3, y: 1 });
+});
+
+test('a player who crosses back through the closing gate into an empty region gets a tile moved within reach', () => {
+  // Row 3 is a wall with one A gate at (3,3); the snake starts above it at (1,2), facing right.
+  const rows = ['.......', '.......', '.S.....', '###A###', '.......', '.......',
+    '.......', '.......', '.......', '.......', '.......'];
+  const g = createGame(createRng(1), DIFFICULTIES.classic, { board: parseBoard(rows) });
+  g.snake.direction = { x: 1, y: 0 }; g.snake.queue = [];
+  g.board.tiles = [{ x: 2, y: 2, value: 4 }];   // value 4 on a head of 2: no merge, length 2
+  startRun(g);
+  let ev = step(g);                              // eat at (2,2): A starts closing (two moves left)
+  assert.equal(ev.ate, true);
+  assert.equal(ev.moved, null, 'the refill landed above the wall, within reach');
+  g.board.tiles = [{ x: 0, y: 0, value: 2 }];   // the only tile is up here, above the wall
+  ev = step(g);                                  // head (3,2): one move of the window left
+  assert.equal(ev.moved, null);
+  g.snake.direction = { ...DOWN };
+  ev = step(g);                                  // head (3,3), on the closing gate: window spent, body on it
+  assert.equal(ev.moved, null, 'the tile is still reachable through the closing gate');
+  ev = step(g);                                  // head (3,4), the tail still on (3,3): the gate waits
+  assert.equal(g.board.gates[0].state, 'closing');
+  assert.equal(ev.moved, null);
+  ev = step(g);                                  // head (3,5): the gate is free and shuts behind the snake
+  assert.equal(ev.over, false);
+  assert.equal(g.board.gates[0].state, 'closed');
+  assert.ok(ev.moved, 'a tile was moved within reach');
+  assert.equal(g.board.tiles.length, 1);
+  const t = g.board.tiles[0];
+  assert.ok(t.y > 3, `the tile now sits below the wall, got ${t.x},${t.y}`);
+  assert.equal(t.value, 2, 'it keeps its value');
+  assert.ok(reachableFrom(g.board, g.snake.cells[0]).has(`${t.x},${t.y}`), 'and the head can reach it');
+});
+
+test('a gate-free game never moves a tile', () => {
+  const g = createGame(createRng(1), DIFFICULTIES.classic);
+  g.board.tiles = [{ x: 3, y: 4, value: 2 }];
+  startRun(g);
+  const ate = step(g);
+  assert.equal(ate.ate, true);
+  assert.equal(ate.moved, null);
+  g.board.tiles = [];
+  const moved = step(g);
+  assert.equal(moved.ate, false);
+  assert.equal(moved.moved, null);
 });

@@ -151,6 +151,31 @@ export function refill(board, rng, maxValue, snakeCells, maxTiles, decay, span) 
   }
 }
 
+// After the gates move, the head may be left in a region with nothing to eat: tiles only refill on
+// a bite, and a bite is the only thing that swaps the gates again, so such a run could never
+// progress. On a board with gates, when no tile is reachable (closing gates count as passable — the
+// player can still get through them), move one unreachable tile to a random free cell the head can
+// reach. Returns the moved tile, or null when nothing needed moving or no reachable cell is free
+// (the snake's own body fills its region; a known limit). Gate-free boards return at once, so their
+// runs and rng draws are unchanged.
+export function ensureReachableTile(board, rng, snakeCells) {
+  if (!board.gates || board.gates.length === 0 || board.tiles.length === 0 || !snakeCells.length) return null;
+  const reach = reachableFrom(board, snakeCells[0], true);
+  if (board.tiles.some(t => reach.has(`${t.x},${t.y}`))) return null;
+  const free = [];
+  for (let y = 0; y < board.rows; y++) {
+    for (let x = 0; x < board.cols; x++) {
+      if (reach.has(`${x},${y}`) && !isOccupied(board, snakeCells, x, y)) free.push({ x, y });
+    }
+  }
+  if (free.length === 0) return null;
+  const cell = free[randInt(rng, free.length)];
+  const tile = board.tiles[0]; // none is reachable, so the first one is unreachable
+  tile.x = cell.x;
+  tile.y = cell.y;
+  return tile;
+}
+
 // Place one obstacle. It keeps clear of the head so it can never appear in the player's
 // face, and prefers not to sit beside another obstacle so a chain of them cannot wall the
 // board in half. A cell beside a gate is treated the same way, so an obstacle cannot seal a gate

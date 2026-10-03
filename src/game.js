@@ -94,7 +94,7 @@ export function currentTarget(game) {
 }
 
 // Advance the game by one tick. Returns an event object for render/FX:
-//   { over, ate, merges, gained, cell, cause, swapped }
+//   { over, ate, merges, gained, cell, cause, swapped, moved }
 export function step(game) {
   if (game.over) return { over: true };
   if (!game.started) return { over: false, waiting: true };
@@ -159,12 +159,16 @@ export function step(game) {
       obstacle = Board.spawnObstacle(b, game.rng, s.cells, s.cells[0]);
     }
     Board.refill(b, game.rng, spawnRef(game), s.cells, game.cfg.maxTiles, game.cfg.decay, game.cfg.span);
-    return { over: false, ate: true, merges: r.merges, gained: r.gained, cell: next, obstacle, armed, relief, swapped };
+    // Never leave the head sealed away from every tile (gate boards only; null elsewhere).
+    const moved = Board.ensureReachableTile(b, game.rng, s.cells);
+    return { over: false, ate: true, merges: r.merges, gained: r.gained, cell: next, obstacle, armed, relief, swapped, moved };
   }
 
   Snake.move(s);
   // Gates tick at the END of a move, on the post-move cells — unlike obstacles, which arm at the start.
   // Do not harmonise them: it would shift the 2-move crossing window.
   Board.tickGates(b, s.cells);
-  return { over: false, ate: false, merges: 0, gained: 0, cell: next, obstacle: null, armed, relief: false, swapped: false };
+  // A gate that just shut may have sealed the head away from every tile: bring one within reach.
+  const moved = Board.ensureReachableTile(b, game.rng, s.cells);
+  return { over: false, ate: false, merges: 0, gained: 0, cell: next, obstacle: null, armed, relief: false, swapped: false, moved };
 }

@@ -427,6 +427,9 @@ sure the bot can clear each level, not tune the levels to its play.
 24  The vault     Reach 256         9     67     44
 ```
 
+The bot never crosses a closing gate, so the two-move window after a bite — where human gate
+deaths will happen — is exercised only by real players: watch `gate` deaths in `/stats`.
+
 Under the 1–12 regime (no win-rate targets), levels 7 and 9 (`Chain ×4`) sit under 10 % win rate
 for the bot because it never plans a cascade; a
 human who builds the ascending body `2 · 4 · 8 · 16` and detonates it with a 2 can clear either. A

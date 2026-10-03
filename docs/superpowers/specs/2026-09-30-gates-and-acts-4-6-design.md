@@ -44,6 +44,13 @@ Decisions taken with the author:
   closed and closing gates and armed obstacles block and the snake's own body does not. When no
   free cell is strictly reachable after a swap, a tile may land beyond a still-closing gate (the
   player can still cross it). Obstacles avoid cells next to a gate unless nowhere else qualifies.
+- **Never sealed away from every tile.** Tiles only refill on a bite, and only a bite swaps the
+  gates, so a player who eats and then dashes back through the still-closing gate into a region
+  with no tile could never eat again. After every successful move or bite on a gate board, if no
+  tile is reachable from the head (closing gates counting as passable), one unreachable tile —
+  keeping its value — moves to a random free cell the head can reach (`ensureReachableTile`; the
+  step's event reports it as `moved`). Boards without gates never run this, so their runs and rng
+  draws are unchanged.
 - **Look.** Closed = a solid rounded block in its set's colour. Open = a dashed outline of the same
   colour on the floor, so the player sees where a gate will close. Closing = alternates between the
   two. No hazard stripes and no red glow: those stay reserved for obstacles and the frame.
@@ -54,9 +61,9 @@ Decisions taken with the author:
   least `GATE.minRegion` = 20 cells. A region whose exits all belong to one set would seal the snake
   in when it eats there, so no such region may be small.
 
-**Known limits.** A rare stall remains possible if the snake's body fills its whole region and the
-only free cell is beyond a gate it cannot reach before it shuts. And an obstacle two cells from a
-gate in a one-wide corridor can still seal that corridor, as walls can.
+**Known limits.** A rare stall remains possible if the snake's body fills its whole region, so no
+free cell is left within reach to move a tile to. A player who crosses back through a closing gate
+into a region with no tile is not stuck: the rule above moves a tile to them.
 
 ## 3. Boards
 
@@ -121,7 +128,7 @@ obstacles and goal only.
 
 ## 5. Engine and modules
 
-- **`src/constants.js`** — `GATE = { warnTicks: 2, minRegion: 20, colors: { A: '#bbf7d0', B:
+- **`src/constants.js`** — `GATE = { warnTicks: 2, minRegion: 20, blinkMs: 90, colors: { A: '#bbf7d0', B:
   '#c4b5fd' } }`: a pale mint and a pale lavender, paler than every `POWER_COLORS` tile, and a
   gate never carries a number, so the two never read alike.
 - **`src/boards.js`** — `parseBoard` reads `A`/`B` into `gates: [{ x, y, set }]`; `isValidBoard`

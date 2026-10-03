@@ -4,6 +4,7 @@ import { createRng } from '../src/rng.js';
 import {
   createBoard, tileAt, removeTile, pickValue, spawnTile, refill, spawnObstacle, obstacleAt,
   armedObstacleAt, armObstacles, wallAt, gateAt, closedGateAt, swapGates, tickGates, reachableFrom,
+  ensureReachableTile,
 } from '../src/board.js';
 import { OBSTACLE, GATE } from '../src/constants.js';
 
@@ -310,4 +311,59 @@ test('spawnObstacle keeps clear of gates while anywhere else qualifies', () => {
     const o = spawnObstacle(b, createRng(seed), [], null, 0);
     assert.ok(o.x === 0 || o.x === 4, `seed ${seed}: obstacle at ${o.x} sits beside the gate`);
   }
+});
+
+// Row 3 is a wall with one B gate at (3,3), closed; the head is below at (3,6).
+function sealedBoard() {
+  const walls = new Set(['0,3', '1,3', '2,3', '4,3', '5,3', '6,3']);
+  return createBoard(7, 11, walls, [{ x: 3, y: 3, set: 'B' }]);
+}
+
+test('ensureReachableTile moves one sealed-off tile into the head\'s region', () => {
+  const b = sealedBoard();
+  b.tiles = [{ x: 0, y: 0, value: 2 }, { x: 5, y: 1, value: 4 }, { x: 2, y: 2, value: 8 }];
+  const before = b.tiles.map(t => ({ ...t }));
+  const snake = [{ x: 3, y: 6 }, { x: 3, y: 7 }];
+  const moved = ensureReachableTile(b, createRng(5), snake);
+  assert.ok(moved);
+  const below = b.tiles.filter(t => t.y > 3);
+  assert.equal(below.length, 1, 'exactly one tile is below the wall');
+  assert.equal(below[0], moved);
+  assert.equal(moved.value, 2, 'the first unreachable tile moved, keeping its value');
+  assert.ok(!snake.some(c => c.x === moved.x && c.y === moved.y), 'not onto the snake');
+  assert.deepEqual(b.tiles.slice(1), before.slice(1), 'the others are unchanged');
+});
+
+test('ensureReachableTile does nothing when a tile is already reachable', () => {
+  const b = sealedBoard();
+  b.tiles = [{ x: 0, y: 0, value: 2 }, { x: 1, y: 8, value: 4 }];
+  assert.equal(ensureReachableTile(b, createRng(5), [{ x: 3, y: 6 }]), null);
+  assert.deepEqual(b.tiles, [{ x: 0, y: 0, value: 2 }, { x: 1, y: 8, value: 4 }]);
+});
+
+test('ensureReachableTile returns at once on a gate-free board, without drawing from the rng', () => {
+  const b = createBoard(7, 11, new Set(['0,3', '1,3', '2,3', '3,3', '4,3', '5,3', '6,3']));
+  b.tiles = [{ x: 0, y: 0, value: 2 }];
+  const rng = createRng(9);
+  assert.equal(ensureReachableTile(b, rng, [{ x: 3, y: 6 }]), null);
+  assert.equal(rng(), createRng(9)(), 'the rng was not consumed');
+  assert.deepEqual(b.tiles, [{ x: 0, y: 0, value: 2 }]);
+});
+
+test('ensureReachableTile counts a closing gate as passable', () => {
+  const b = sealedBoard();
+  swapGates(b); // B opens...
+  swapGates(b); // ...and is now closing
+  assert.equal(gateAt(b, 3, 3).state, 'closing');
+  b.tiles = [{ x: 0, y: 0, value: 2 }];
+  assert.equal(ensureReachableTile(b, createRng(5), [{ x: 3, y: 6 }]), null);
+  assert.deepEqual(b.tiles, [{ x: 0, y: 0, value: 2 }], 'nothing moved');
+});
+
+test('ensureReachableTile returns null when the head\'s region has no free cell', () => {
+  // A 3x1 strip: the snake fills the left two cells, the B gate is the third, closed; tile beyond it.
+  const b = createBoard(4, 1, new Set(), [{ x: 2, y: 0, set: 'B' }]);
+  b.tiles = [{ x: 3, y: 0, value: 2 }];
+  assert.equal(ensureReachableTile(b, createRng(5), [{ x: 1, y: 0 }, { x: 0, y: 0 }]), null);
+  assert.deepEqual(b.tiles, [{ x: 3, y: 0, value: 2 }]);
 });
