@@ -63,7 +63,8 @@ Decisions taken with the author:
 
 **Known limits.** A rare stall remains possible if the snake's body fills its whole region, so no
 free cell is left within reach to move a tile to. A player who crosses back through a closing gate
-into a region with no tile is not stuck: the rule above moves a tile to them.
+into a region with no tile is not stuck: the rule above moves a tile to them. An obstacle two cells from a
+gate in a one-wide corridor can still seal that corridor, as walls can.
 
 ## 3. Boards
 
