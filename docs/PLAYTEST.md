@@ -228,7 +228,7 @@ The ten boards (`src/boards.js`):
 | The door     | a wall across the middle with two doors, one of each set — one is always open, so the halves never disconnect |
 | The locks    | two walls, each with one door of its own set — eating opens the bottom part and seals the top, and back |
 | The halves   | a wall down the middle with a door of each set — the same idea on its side, starting in the left half |
-| The rooms    | two small rooms up top, each with its own door down — eating in a room swaps you into the joined rooms, eating below seals them off |
+| The rooms    | two small rooms up top, each with its own A door down and a B gate joining them — eating in a room opens the B gate and shuts the A doors, joining the rooms into one; eating below opens the A doors and seals the rooms off from each other again |
 | The vault    | an inner room and a one-cell-wide outer ring joined by four gates, two of each set — the finale's board |
 
 **Gates** (the last five boards) are cells of two sets, A and B, drawn in two colours: at the start
@@ -237,7 +237,8 @@ them — the closed set opens at once, the open set starts closing: a closing ga
 moves and can still be crossed, then turns solid. Running into a closed gate ends the run like a
 wall, with its own cause, `gate`, so `/stats` shows whether gates kill too often. Tiles and
 obstacles never land on a gate, and a tile never spawns in a region the snake cannot reach at that
-moment.
+moment — except that when no free cell is strictly reachable after a swap, a tile may land beyond a
+still-closing gate, which the player can still cross.
 
 **Unlocking is linear:** clearing a level (one star) unlocks the next; stars never gate anything —
 they exist to bring a player back to a level, not to block one. Attempts are unlimited, and **each
@@ -375,15 +376,28 @@ Chill 256).
 per level, the win rate and, among wins, how often ★★ and ★★★ held (`node
 tools/simulate.js --campaign=7` runs one level alone).
 
-Goals, boards, speeds, obstacle cadence and every `tile`/`chain` star are **design**, chosen as a
+The table has two regimes. Lines 1–12 are the 2026-09-15 retune's numbers — those levels are
+unchanged, and the 2026-10-01 run reproduced them exactly; lines 13–24 are the 2026-10-01
+calibration of the gate acts.
+
+**Levels 1–12 (2026-09-15 retune).** Goals, boards, speeds, obstacle cadence and every
+`tile`/`chain` star are **design**, chosen as a
 doubling ladder per act (64 → 128 → 256, capped at 256 because the bot's Endless median tile — 512
 on Classic — sits one or two rungs above a human's); ★★ is always the easier star, ★★★ the harder.
 Only the `eats` and `time` stars come from the simulator: `eats` is the p50 of eats among the
 bot's wins, up to the nearest 2; `time` is the p50 seconds among the bot's wins × 1.4 (the bot
-moves the instant a path is clear; a human takes a beat to look), up to the nearest 5. The win rate
-and ★★/★★★ hit rates below are reported, not targeted: the bot path-finds and always takes the
-matching tile, a human does not, so a win-rate band measured against the bot fit the bot's play,
-not a person's — that is why goals stopped being tuned to it.
+moves the instant a path is clear; a human takes a beat to look), up to the nearest 5. For these
+twelve levels the win rate and ★★/★★★ hit rates below are reported, not targeted: the bot
+path-finds and always takes the matching tile, a human does not, so a win-rate band measured
+against the bot fit the bot's play, not a person's — that is why their goals stopped being tuned
+to it.
+
+**Levels 13–24 (2026-10-01 calibration).** The `eats`/`time` rule is the same, but these levels
+also have floors — a minimum win rate and ★★★ hit rate — because the gate acts started from
+untested values and the author asked for an easier campaign. A level that missed a floor was
+changed on its own, by obstacle cadence first, then speed, then its goal or a `tile`/`chain`
+star one rung down (details below the table). The floors are a minimum, not a band: they make
+sure the bot can clear each level, not tune the levels to its play.
 
 ```
  #  board         goal            win%   ★★%   ★★★%
@@ -413,10 +427,12 @@ not a person's — that is why goals stopped being tuned to it.
 24  The vault     Reach 256         9     67     44
 ```
 
-Levels 7 and 9 (`Chain ×4`) sit under 10 % win rate for the bot because it never plans a cascade; a
+Under the 1–12 regime (no win-rate targets), levels 7 and 9 (`Chain ×4`) sit under 10 % win rate
+for the bot because it never plans a cascade; a
 human who builds the ascending body `2 · 4 · 8 · 16` and detonates it with a 2 can clear either. A
 `survive T s` goal was tried and dropped: the bot won it by circling without eating, since nothing
-in the game ramps unless the snake eats.
+in the game ramps unless the snake eats. Levels 13–24 are held to win-rate floors instead — see
+the next paragraph.
 
 Levels 13–24 were calibrated against targets the first twelve were not held to: the bot wins at
 least 10 % on levels 13–20 and at least 7 % on 21–24 (the author asked for an easier campaign, so

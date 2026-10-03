@@ -82,7 +82,8 @@ The door       The locks      The halves     The rooms      The vault
 - **The door** teaches the rule: one door is always open, so the two halves never disconnect.
 - **The locks** is the first real choice: eating opens the bottom and seals the top, and back.
 - **The halves** turns the same idea on its side, with the start in the left half.
-- **The rooms** has two 12-cell rooms, each with its own door down; eating in a room swaps you into
+- **The rooms** has two 12-cell rooms, each with its own A door down and joined to each other by a
+  B gate; eating in a room opens the B gate and shuts the A doors, swapping you into
   the joined rooms (25 cells), eating below seals them off.
 - **The vault** is the finale's board: an inner room and an outer ring joined by four gates.
 
