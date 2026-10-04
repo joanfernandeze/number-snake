@@ -39,12 +39,15 @@ export function runFacts(rec, device) {
 }
 
 // Fire and forget. Never blocks the game, never throws, and does nothing without an endpoint.
+// The beacon is text/plain on purpose: that is a simple request, so the browser sends no CORS preflight.
+// With application/json it preflights with credentials, the Worker's reply (no Allow-Credentials) makes
+// Chrome drop the beacon, and sendBeacon still reports success. The Worker parses the body as JSON anyway.
 export function sendRun(record, endpoint = ANALYTICS.endpoint) {
   if (!endpoint) return false;
   const body = JSON.stringify(record);
   try {
     if (typeof navigator !== 'undefined' && navigator && typeof navigator.sendBeacon === 'function') {
-      return navigator.sendBeacon(endpoint, new Blob([body], { type: 'application/json' }));
+      return navigator.sendBeacon(endpoint, new Blob([body], { type: 'text/plain;charset=UTF-8' }));
     }
   } catch { /* fall through to fetch */ }
   try {

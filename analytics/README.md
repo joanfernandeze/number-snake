@@ -39,6 +39,15 @@ Campaign levels 13-24 can end with `cause: 'gate'`. A Worker deployed before thi
 runs, so redeploy **before** pushing the game: `npm run deploy` from `analytics/`. No schema change:
 `cause` is already a free-text column.
 
+## Upgrading an existing deployment (Android app, 2026-10-04)
+
+The Android app sends runs from the origin `https://localhost`. A Worker deployed before this
+rejects them silently, so redeploy **before** the closed test: `npm run deploy` from `analytics/`
+(in PowerShell: `cd analytics; npm run deploy`). No schema change.
+
+The game now sends its beacon as `text/plain` (no CORS preflight). Earlier builds sent
+`application/json`, which Chrome blocked; runs from those builds may be missing from `/stats`.
+
 ## Read the numbers
 
 `https://number-snake-analytics.<you>.workers.dev/stats?key=<STATS_KEY>` returns:

@@ -73,7 +73,7 @@ test('sendRun is off without an endpoint and posts a beacon with one', () => {
     assert.equal(sendRun({ score: 1 }, 'https://example.test/run'), true);
     assert.equal(seen.length, 1);
     assert.equal(seen[0].url, 'https://example.test/run');
-    assert.equal(seen[0].type, 'application/json');
+    assert.equal(seen[0].type, 'text/plain;charset=utf-8');
   } finally {
     if (prevDescriptor) Object.defineProperty(globalThis, 'navigator', prevDescriptor);
     else delete globalThis.navigator;
@@ -168,4 +168,17 @@ test('runFacts output satisfies the Worker validator', () => {
   assert.notEqual(validateRun(out), null);
   assert.ok(validateRun(runFacts({ ...rec, mode: 'campaign', cause: 'won', level: 7 }, { daySince: 0, daysPlayed: 1, firstOfDay: true })), 'a won campaign run is accepted');
   assert.ok(validateRun(runFacts({ ...rec, mode: 'campaign', cause: 'won', level: 7, stars: 3 }, { daySince: 0, daysPlayed: 1, firstOfDay: true })), 'a three-star win is accepted');
+});
+
+test('the beacon is sent as text/plain, so the browser makes no CORS preflight', async () => {
+  const saved = globalThis.navigator;
+  let captured = null;
+  Object.defineProperty(globalThis, 'navigator', { value: { sendBeacon(url, blob) { captured = blob; return true; } }, configurable: true, writable: true });
+  try {
+    assert.equal(sendRun({ a: 1 }, 'https://x.example/run'), true);
+    assert.ok(captured.type.toLowerCase().startsWith('text/plain'), captured.type);
+    assert.equal(await captured.text(), JSON.stringify({ a: 1 }));
+  } finally {
+    Object.defineProperty(globalThis, 'navigator', { value: saved, configurable: true, writable: true });
+  }
 });

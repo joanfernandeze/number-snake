@@ -4,9 +4,13 @@ import { validateRun } from './validate.js';
 // shared secret. No identifiers are received or stored; see the design spec.
 const SITE = 'https://joanfernandeze.github.io';
 
-function allowedOrigin(origin) {
+// Origins allowed to send runs: the published site, local development, and the Android app (Capacitor
+// serves the game from https://localhost inside the WebView).
+const APP = 'https://localhost';
+
+export function allowedOrigin(origin) {
   if (!origin) return SITE;
-  if (origin === SITE || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin;
+  if (origin === SITE || origin === APP || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin;
   return null;
 }
 
