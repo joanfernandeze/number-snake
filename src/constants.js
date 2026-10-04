@@ -69,6 +69,20 @@ export const SOUND = {
   gateHz: 520,       // the gates swapping: a latch-like click above the eat blip
 };
 
+// Background music, generated like the effects. Its tempo follows the snake's speed between two
+// clamps, and it sits well under the effects in the mix (spec 2026-10-03).
+export const MUSIC = {
+  storageKey: 'numberSnake.music',
+  gain: 0.02,        // about a third of SOUND.gain, so every effect stays on top
+  bpmMin: 90,        // the tempo at slowMs per move or slower
+  bpmMax: 150,       // the tempo at fastMs per move or faster
+  slowMs: 360,
+  fastMs: 120,
+  timerMs: 25,       // how often the scheduler wakes
+  lookaheadMs: 100,  // how far ahead of the audio clock it schedules
+  fadeMs: 500,       // the fade when a run ends
+};
+
 export const DEFAULT_DIFFICULTY = 'classic';
 
 export const START = {

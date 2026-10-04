@@ -26,8 +26,9 @@ let muted = false;
 export function setMuted(value) { muted = !!value; return muted; }
 export function isMuted() { return muted; }
 
-function audio() {
-  if (muted) return null;
+// The one audio context the game uses, created on first use and resumed if the browser suspended
+// it. Shared with the music, which has its own on/off and must not depend on the effects' mute.
+export function audioContext() {
   if (!ctx) {
     const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
     if (!AC) return null;
@@ -35,6 +36,10 @@ function audio() {
   }
   if (ctx.state === 'suspended') { try { ctx.resume(); } catch { /* ignore */ } }
   return ctx;
+}
+
+function audio() {
+  return muted ? null : audioContext();
 }
 
 // One short note, shaped by a quick attack and an exponential fall so nothing clicks.

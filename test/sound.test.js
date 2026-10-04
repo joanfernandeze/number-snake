@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeHz, loadMuted, saveMuted, playGateSwap } from '../src/sound.js';
+import { mergeHz, loadMuted, saveMuted, playGateSwap, audioContext } from '../src/sound.js';
 import { SOUND } from '../src/constants.js';
 
 function fakeStorage(initial) {
@@ -40,4 +40,8 @@ test('the module imports cleanly where there is no Web Audio at all', () => {
 test('the gate swap sound is safe without an AudioContext and sits apart from the eat blip', () => {
   assert.doesNotThrow(() => playGateSwap());
   assert.ok(SOUND.gateHz > SOUND.eatHz, 'higher than the eat blip it follows');
+});
+
+test('the shared audio context is null where there is no Web Audio, and never throws', () => {
+  assert.equal(audioContext(), null);
 });
