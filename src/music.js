@@ -169,13 +169,14 @@ function playStep(ac, i, t) {
     const degree = track[voice][i];
     if (degree === null || degree === undefined) continue;
     const steps = voice === 'bass' ? bassSteps(track.bass, i) : LENGTH[voice];
-    note(ac, pitchHz(track, voice, degree), t, steps * sec, track.waves[voice], LEVEL[voice]);
+    note(ac, pitchHz(track, voice, degree), t, steps * sec, steps, track.waves[voice], LEVEL[voice]);
   }
   if (track.hat[i]) hat(ac, t);
 }
 
-// One note into the music bus, with the same quick attack and exponential fall as the effects.
-function note(ac, hz, t, secs, type, level) {
+// One note into the music bus, with the same quick attack and exponential fall as the effects,
+// except that a note of three steps or more (in practice the sustained bass) holds a body first.
+function note(ac, hz, t, secs, steps, type, level) {
   try {
     const osc = ac.createOscillator();
     const amp = ac.createGain();
@@ -183,7 +184,7 @@ function note(ac, hz, t, secs, type, level) {
     osc.frequency.setValueAtTime(hz, t);
     amp.gain.setValueAtTime(0.0001, t);
     amp.gain.exponentialRampToValueAtTime(level, t + 0.01);
-    if (secs > 0.25) amp.gain.exponentialRampToValueAtTime(level * 0.6, t + secs * 0.7); // a held body
+    if (steps >= 3) amp.gain.exponentialRampToValueAtTime(level * 0.6, t + secs * 0.7); // a held body
     amp.gain.exponentialRampToValueAtTime(0.0001, t + secs);
     osc.connect(amp);
     amp.connect(bus);

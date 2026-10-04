@@ -93,6 +93,15 @@ test('planTick lists due steps, and skips missed ones so nothing is scheduled in
   near(normal.next, 1.25, 'next');
   assert.equal(normal.step, 5);
 
+  const exact = planTick(1.0, 3, 1.0, sec, 0.2); // nextTime === now: no skip
+  assert.equal(exact.times[0], 1.0);
+  assert.equal(exact.steps[0], 3);
+
+  const dead = planTick(1.0, 3, 5.0, 0, 0.2); // a non-positive step length schedules nothing
+  assert.deepEqual(dead.times, []);
+  assert.equal(dead.step, 3);
+  assert.equal(dead.next, 1.0);
+
   const late = planTick(1.0, 3, 1.05, sec, 0.2); // 50 ms behind: skip step 3, resume on the grid
   near(late.times[0], 1.125, 'first on-grid step after now');
   assert.equal(late.steps[0], 4);
