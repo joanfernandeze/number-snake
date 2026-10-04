@@ -1,0 +1,5 @@
+# Pin the line endings that matter for the Android build; everything else keeps the repo's defaults.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+gradlew text eol=lf
+*.jar binary
