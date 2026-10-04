@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  bpmFor, stepSeconds, stepsDue, pitchHz, bassSteps, loadMuted, saveMuted,
+  bpmFor, stepSeconds, stepsDue, pitchHz, bassSteps, planTick, loadMuted, saveMuted,
   start, stop, pause, resume, setTempoFromInterval, setMuted, isMuted,
 } from '../src/music.js';
 import { TRACKS } from '../src/tracks.js';
@@ -74,10 +74,45 @@ test('bassSteps sustains a bass note until the next one, at most half a bar', ()
 });
 
 test('the live part is a safe no-op where there is no Web Audio', () => {
-  assert.equal(start('vault'), false, 'nothing to play on');
-  assert.doesNotThrow(() => { setTempoFromInterval(200); pause(); resume(); stop(); stop(true); });
-  assert.equal(setMuted(true), true);
-  assert.equal(isMuted(), true);
-  assert.equal(start('open'), false, 'muted music never starts');
-  setMuted(false);
+  try {
+    assert.equal(start('vault'), false, 'nothing to play on');
+    assert.doesNotThrow(() => { setTempoFromInterval(200); pause(); resume(); stop(); stop(true); });
+    assert.equal(setMuted(true), true);
+    assert.equal(isMuted(), true);
+    assert.equal(start('open'), false, 'muted music never starts');
+  } finally {
+    setMuted(false);
+  }
+});
+
+test('planTick lists due steps, and skips missed ones so nothing is scheduled in the past', () => {
+  const sec = 0.125;
+  const normal = planTick(1.0, 3, 0.95, sec, 0.2);
+  assert.deepEqual(normal.times, [1.0, 1.125]);
+  assert.deepEqual(normal.steps, [3, 4]);
+  near(normal.next, 1.25, 'next');
+  assert.equal(normal.step, 5);
+
+  const late = planTick(1.0, 3, 1.05, sec, 0.2); // 50 ms behind: skip step 3, resume on the grid
+  near(late.times[0], 1.125, 'first on-grid step after now');
+  assert.equal(late.steps[0], 4);
+  assert.ok(late.times.every((t) => t >= 1.05));
+
+  const far = planTick(1.0, 3, 3.0, sec, 0.2); // 2 s behind
+  assert.equal(far.steps[0], (3 + 16) % 16, 'phase kept: 16 missed steps');
+  near(far.times[0], 3.0, 'on the grid');
+  assert.ok(far.times.every((t) => t >= 3.0));
+  assert.equal(far.steps.length, far.times.length);
+});
+
+test('every track pitch is finite and in a playable range', () => {
+  for (const [name, tr] of Object.entries(TRACKS)) {
+    for (const voice of ['bass', 'arp', 'lead']) {
+      tr[voice].forEach((d, i) => {
+        if (d === null || d === undefined) return;
+        const hz = pitchHz(tr, voice, d);
+        assert.ok(Number.isFinite(hz) && hz >= 60 && hz <= 2000, `${name}.${voice}[${i}] = ${hz}`);
+      });
+    }
+  }
 });

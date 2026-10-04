@@ -43,8 +43,22 @@ export function pitchHz(track, voice, degree) {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
+// One scheduler wake-up as pure arithmetic. If the timer fell behind the audio clock, the missed
+// steps are skipped (not crammed into the past), keeping the beat on its grid and in phase; then the
+// steps that start before now + lookahead are listed with their step indices.
+export function planTick(nextTime, step, now, stepSec, lookaheadSec) {
+  if (stepSec > 0 && nextTime < now) {
+    const missed = Math.ceil((now - nextTime) / stepSec);
+    nextTime += missed * stepSec;
+    step = (step + missed) % STEPS;
+  }
+  const { times, next } = stepsDue(nextTime, stepSec, now + lookaheadSec);
+  const steps = times.map((_, k) => (step + k) % STEPS);
+  return { times, steps, next, step: (step + times.length) % STEPS };
+}
+
 // How long a bass note rings, in steps: until the next bass note (wrapping round the bar), at most
-// half a bar — so a sparse bass sustains under the bar instead of plucking and leaving silence.
+// half a bar — so a sparse bass sustains (a held body, see note()) under the bar instead of plucking and leaving silence.
 export function bassSteps(pattern, i) {
   for (let k = 1; k <= STEPS; k++) {
     const d = pattern[(i + k) % STEPS];
@@ -143,11 +157,10 @@ export function resume() {
 function tick() {
   const ac = audioContext();
   if (!ac || !track) return;
-  // A throttled timer can fall far behind the audio clock: resync instead of playing a burst.
-  if (nextTime < ac.currentTime - 0.2) nextTime = ac.currentTime + 0.02;
-  const { times, next } = stepsDue(nextTime, stepSeconds(bpm), ac.currentTime + MUSIC.lookaheadMs / 1000);
-  for (const t of times) { playStep(ac, step, t); step = (step + 1) % STEPS; }
-  nextTime = next;
+  const plan = planTick(nextTime, step, ac.currentTime, stepSeconds(bpm), MUSIC.lookaheadMs / 1000);
+  plan.times.forEach((t, k) => playStep(ac, plan.steps[k], t));
+  nextTime = plan.next;
+  step = plan.step;
 }
 
 function playStep(ac, i, t) {
@@ -170,6 +183,7 @@ function note(ac, hz, t, secs, type, level) {
     osc.frequency.setValueAtTime(hz, t);
     amp.gain.setValueAtTime(0.0001, t);
     amp.gain.exponentialRampToValueAtTime(level, t + 0.01);
+    if (secs > 0.25) amp.gain.exponentialRampToValueAtTime(level * 0.6, t + secs * 0.7); // a held body
     amp.gain.exponentialRampToValueAtTime(0.0001, t + secs);
     osc.connect(amp);
     amp.connect(bus);

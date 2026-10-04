@@ -34,7 +34,7 @@ export function audioContext() {
     if (!AC) return null;
     try { ctx = new AC(); } catch { return null; }
   }
-  if (ctx.state === 'suspended') { try { ctx.resume(); } catch { /* ignore */ } }
+  if (ctx.state === 'suspended') { try { ctx.resume().catch(() => {}); } catch { /* ignore */ } }
   return ctx;
 }
 
