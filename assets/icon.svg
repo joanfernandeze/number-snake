@@ -1,0 +1,33 @@
+<!-- Number Snake app icon: a teal head, blue body and purple tail turning a corner on the board navy. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+  </defs>
+  <rect id="bg" x="0" y="0" width="1024" height="1024" fill="#111935"/>
+
+  <g transform="translate(12 0)">
+    <!-- Bridges between segments, half in each segment's colour (drawBridge). -->
+    <rect x="352" y="481" width="80" height="120" fill="#8b5cf6"/>
+    <rect x="352" y="361" width="80" height="120" fill="#3b82f6"/>
+    <rect x="392" y="321" width="120" height="80" fill="#3b82f6"/>
+    <rect x="512" y="321" width="120" height="80" fill="#2dd4bf"/>
+
+    <!-- Tapered tail tip behind the last segment, pointing away from the body. -->
+    <path d="M346 670 Q378 772 392 780 Q406 772 438 670 Z" fill="#8b5cf6"/>
+
+    <!-- Segments: tail (purple), corner (blue), head (teal) with its glow. -->
+    <rect x="298" y="507" width="188" height="188" rx="52" fill="#8b5cf6"/>
+    <rect x="298" y="267" width="188" height="188" rx="52" fill="#3b82f6"/>
+    <rect x="538" y="267" width="188" height="188" rx="52" fill="#2dd4bf" opacity="0.6" filter="url(#glow)"/>
+    <rect x="538" y="267" width="188" height="188" rx="52" fill="#2dd4bf"/>
+    <rect x="544" y="273" width="176" height="176" rx="46" fill="none" stroke="#ffffff" stroke-opacity="0.9" stroke-width="12"/>
+
+    <!-- Eyes looking right, the way the head is travelling. -->
+    <circle cx="684" cy="313" r="29" fill="#ffffff"/>
+    <circle cx="684" cy="409" r="29" fill="#ffffff"/>
+    <circle cx="695" cy="313" r="15" fill="#111935"/>
+    <circle cx="695" cy="409" r="15" fill="#111935"/>
+  </g>
+</svg>
