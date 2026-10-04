@@ -36,8 +36,11 @@ function saveBest(b) {
 function fitCanvas() {
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
   const app = $('app');
-  const used = $('hud').offsetHeight + $('hint').offsetHeight + 48; // 2 gaps + 2 paddings of 12px
-  const availW = Math.max(120, Math.min(420, app.clientWidth - 24));
+  const cs = getComputedStyle(app);
+  const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+  const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+  const used = $('hud').offsetHeight + $('hint').offsetHeight + 24 + padY; // 2 gaps of 12px + the safe paddings
+  const availW = Math.max(120, Math.min(420, app.clientWidth - padX));
   const availH = Math.max(120, app.clientHeight - used);
   const ratio = GRID.cols / GRID.rows;
   let w = availW, h = Math.round(w / ratio);
@@ -345,11 +348,11 @@ function onGameOver(ev, now) {
 function frame(now) {
   const dt = prevNow === undefined ? 0 : now - prevNow;
   prevNow = now;
-  interval = Game.smoothInterval(interval, Game.currentTarget(game), dt);
+  const paused = pausedAt !== null;
+  if (!paused) interval = Game.smoothInterval(interval, Game.currentTarget(game), dt);
   Music.setTempoFromInterval(interval);
 
   const elapsed = now - lastTick;
-  const paused = pausedAt !== null;
   if (!paused && game.started && !game.over && Game.tickDue(elapsed, interval, game.snake.queue.length > 0)) {
     const early = elapsed < interval; // a queued turn cut the slide short
     const prevCells = game.snake.cells.map(c => ({ x: c.x, y: c.y })); // where the body slides from
