@@ -2,6 +2,7 @@
   "appId": "com.numbersnake.game",
   "appName": "Number Snake",
   "webDir": "www",
+  "backgroundColor": "#111935",
   "plugins": {
     "SystemBars": {
       "insetsHandling": "css",

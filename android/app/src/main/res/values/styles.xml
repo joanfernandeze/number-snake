@@ -13,6 +13,9 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- Navy, not white, behind the WebView: seen while it loads and, on WebViews older than 140,
+             in the padding Capacitor adds under the status and gesture bars. -->
+        <item name="android:windowBackground">@drawable/window_navy</item>
     </style>
 
 
