@@ -1,0 +1,11 @@
+{
+  "appId": "com.numbersnake.game",
+  "appName": "Number Snake",
+  "webDir": "www",
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DARK"
+    }
+  }
+}

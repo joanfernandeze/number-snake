@@ -4,3 +4,7 @@ Thumbs.db
 analytics/node_modules/
 .wrangler/
 .superpowers/
+www/
+*.jks
+*.keystore
+keystore.properties

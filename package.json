@@ -4,6 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "app": "node scripts/copy-www.mjs && npx cap sync android",
+    "app:icons": "node scripts/icon-png.mjs && npx capacitor-assets generate --android"
+  },
+  "dependencies": {
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.2"
   }
 }
