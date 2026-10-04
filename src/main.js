@@ -267,6 +267,9 @@ function start(opts = {}) {
 }
 
 function onDirection(dir) {
+  // Keyboard input reaches window even with the map up, and would start the hidden run behind it
+  // (and its music). Touch is unaffected: the map covers the canvas.
+  if (!$('mapOverlay').classList.contains('hidden')) return;
   if (!game || game.over) return;
   if (!game.started) { Game.startRun(game); lastTick = performance.now(); run.t0 = lastTick; paintDaily(); $('goalCard').classList.add('hidden'); Music.setTempoFromInterval(interval); Music.start(runBoardKey()); }
   Snake.setDirection(game.snake, dir);

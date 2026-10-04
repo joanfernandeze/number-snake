@@ -74,7 +74,7 @@ board in `BOARDS` has a track and that every track is well formed (§6).
 - A `Music: on/off` button beside `Sound: on/off` on the end-of-run panel. **On by default.** Stored in
   `localStorage['numberSnake.music']` exactly as the sound setting is stored (a corrupt or missing value
   means on).
-- The button lives on the end-of-run panel, so a change applies from the next run; turning it off also stops anything still fading out.
+- The button lives on the end-of-run panel, so a change applies from the next run.
 - The two buttons are independent: music only, effects only, both or neither.
 
 ## 6. Modules and testing
