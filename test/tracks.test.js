@@ -20,6 +20,7 @@ test('every track is well formed', () => {
     for (const v of VOICES) {
       assert.ok(['sine', 'triangle', 'square', 'sawtooth'].includes(t.waves[v]), `${key} ${v} wave`);
       assert.equal(t[v].length, 16, `${key} ${v} has 16 steps`);
+      assert.ok(t[v].some(d => d !== null), `${key} ${v} has at least one note`);
       for (const d of t[v]) assert.ok(d === null || Number.isInteger(d), `${key} ${v} step is a degree or a rest`);
     }
     assert.equal(t.hat.length, 16, `${key} hat has 16 steps`);
