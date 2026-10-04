@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bpmFor, stepSeconds, stepsDue, pitchHz, loadMuted, saveMuted } from '../src/music.js';
+import {
+  bpmFor, stepSeconds, stepsDue, pitchHz, bassSteps, loadMuted, saveMuted,
+  start, stop, pause, resume, setTempoFromInterval, setMuted, isMuted,
+} from '../src/music.js';
+import { TRACKS } from '../src/tracks.js';
 import { MUSIC } from '../src/constants.js';
 
 const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} !== ${b}`);
@@ -30,6 +34,9 @@ test('stepsDue returns exactly the steps that start inside the window, never one
   const b = stepsDue(a.next, 0.125, 1.5);
   assert.deepEqual(b.times, [1.375]);
   assert.deepEqual(stepsDue(2.0, 0.125, 2.0).times, [], 'a window that ends where the next step starts is empty');
+  assert.deepEqual(stepsDue(1, 0, 2), { times: [], next: 1 }, 'a zero step never hangs');
+  assert.deepEqual(stepsDue(1, -0.1, 2), { times: [], next: 1 }, 'a negative step never hangs');
+  assert.deepEqual(stepsDue(1, 0.1, Infinity), { times: [], next: 1 }, 'an infinite window never hangs');
 });
 
 test('pitchHz places the root by voice octave and wraps degrees across octaves', () => {
@@ -40,6 +47,8 @@ test('pitchHz places the root by voice octave and wraps degrees across octaves',
   near(pitchHz(t, 'arp', 7), 880, 'degree = scale length is the octave');
   near(pitchHz(t, 'arp', -7), 220, 'negative degrees go down');
   near(pitchHz(t, 'arp', 4), 440 * Math.pow(2, 7 / 12), 'the fifth');
+  near(pitchHz(t, 'arp', 8), 440 * 2 ** (14 / 12), 'degree 8 is B5');
+  near(pitchHz(t, 'arp', -1), 440 * 2 ** (-1 / 12), 'degree -1 is G#4');
 });
 
 test('the music preference defaults to on and round-trips', () => {
@@ -52,4 +61,23 @@ test('the music preference defaults to on and round-trips', () => {
   assert.equal(loadMuted(s), false);
   const broken = { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('blocked'); } };
   assert.equal(loadMuted(broken), false, 'unreadable storage means music on');
+});
+
+test('bassSteps sustains a bass note until the next one, at most half a bar', () => {
+  const nulls = (n) => Array(n).fill(null);
+  const two = [0, ...nulls(7), 4, ...nulls(7)];
+  assert.equal(bassSteps(two, 0), 8);
+  assert.equal(bassSteps(two, 8), 8);
+  assert.equal(bassSteps(Array(16).fill(0), 3), 1);
+  assert.equal(bassSteps([0, ...nulls(15)], 0), 8);
+  assert.equal(bassSteps(TRACKS.lanes.bass, 1), 2);
+});
+
+test('the live part is a safe no-op where there is no Web Audio', () => {
+  assert.equal(start('vault'), false, 'nothing to play on');
+  assert.doesNotThrow(() => { setTempoFromInterval(200); pause(); resume(); stop(); stop(true); });
+  assert.equal(setMuted(true), true);
+  assert.equal(isMuted(), true);
+  assert.equal(start('open'), false, 'muted music never starts');
+  setMuted(false);
 });
