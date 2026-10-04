@@ -301,6 +301,16 @@ function resumeRun(now) {
   Music.resume();
 }
 
+// Leave a run without ending it (the back button): no game over, no telemetry, no analytics. It is
+// marked over so nothing treats it as still in play: the Daily button, the HUD chip, the loop.
+function abandonRun() {
+  Music.stop(true);
+  pausedAt = null;
+  $('pauseCard').classList.add('hidden');
+  if (game && game.started && !game.over) game.over = true;
+  showMap();
+}
+
 function onGameOver(ev, now) {
   Music.stop();
   const won = !!ev.won;
@@ -474,7 +484,7 @@ if (AppPlugin) {
     });
     if (action === 'minimize') AppPlugin.minimizeApp();
     else if (action === 'pause') pauseRun();
-    else { Music.stop(true); showMap(); } // a paused or unstarted run is simply left behind: no game over, no telemetry
+    else abandonRun();
   });
 }
 window.addEventListener('resize', fitCanvas);
