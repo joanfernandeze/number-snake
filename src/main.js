@@ -291,7 +291,7 @@ function pauseRun() {
 
 function resumeRun(now) {
   run.t0 = shiftForPause(run.t0, pausedAt, now);
-  lastTick = now; // the next move is a full interval away, as at the start of a run
+  lastTick = shiftForPause(lastTick, pausedAt, now); // the slide picks up exactly where it froze
   pausedAt = null;
   $('pauseCard').classList.add('hidden');
   Music.resume();
