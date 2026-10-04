@@ -460,6 +460,9 @@ $('musicToggle').addEventListener('click', () => {
 document.addEventListener('visibilitychange', () => { if (document.hidden) pauseRun(); });
 window.addEventListener('resize', fitCanvas);
 window.addEventListener('orientationchange', fitCanvas);
+// Capacitor sets the safe-area insets after the page loads, which changes #app's padding but fires
+// no resize event; the padding shrinks #app's content box, which a ResizeObserver does see.
+if (typeof ResizeObserver === 'function') new ResizeObserver(() => fitCanvas()).observe($('app'));
 // Tapping a level starts a run on it straight away: the panel is already the "play again" moment.
 $('levels').addEventListener('click', (e) => {
   const key = e.target && e.target.dataset && e.target.dataset.level;
