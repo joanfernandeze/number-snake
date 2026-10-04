@@ -9,8 +9,9 @@ Gradle 8.14 cannot run on Java 25 (`Unsupported class file major version 69`), a
 Studio's own `jbr` is Java 25. Use JDK 21:
 
 - **Android Studio:** Settings → Build, Execution, Deployment → Build Tools → Gradle → *Gradle JDK* →
-  pick a JDK 21 (this machine has `%USERPROFILE%\.jdks\jdk-21.0.12+8`; otherwise *Download JDK…* → version 21).
-- **Command line:** `$env:JAVA_HOME = "$env:USERPROFILE\.jdks\jdk-21.0.12+8"`
+  pick your JDK 21 (e.g. `%USERPROFILE%\.jdks\jdk-21.0.12+8`; if there is none, *Download JDK…* → version 21).
+- **Command line:** set `JAVA_HOME` to your JDK 21 path, e.g.
+  `$env:JAVA_HOME = "$env:USERPROFILE\.jdks\jdk-21.0.12+8"`
 
 SDK Platform 36 is needed (compileSdk/targetSdk 36). Gradle accepted its licence and installed it
 automatically on the first build; if it ever doesn't, install it from Android Studio → Settings →
@@ -43,11 +44,17 @@ Languages & Frameworks → Android SDK → SDK Platforms → Android 16.0 (API 3
 
 ## Trying a debug build on a phone
 
-Enable *Developer options → USB debugging* on the phone, plug it in, then from the repo root:
+Enable *Developer options → USB debugging* on the phone, plug it in, then from the repo root
+(set `JAVA_HOME` to your JDK 21 path; the one below is an example). Each step runs only if the
+previous one succeeded, so a failed build never installs a stale APK, and the shell ends back in
+the repo root:
 
 ```powershell
 $env:JAVA_HOME = "$env:USERPROFILE\.jdks\jdk-21.0.12+8"
-npm run app; cd android; .\gradlew.bat assembleDebug; & "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r app\build\outputs\apk\debug\app-debug.apk; cd ..
+$ok = $false
+npm run app
+if ($?) { Push-Location android; .\gradlew.bat assembleDebug; $ok = $?; Pop-Location }
+if ($ok) { & "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r android\app\build\outputs\apk\debug\app-debug.apk }
 ```
 
 ## What was verified on the emulator
@@ -67,3 +74,9 @@ Debug build on a Pixel 7 AVD (1080×2400, Android 15 / API 35, system WebView 12
 - No JavaScript errors from the game in logcat. Capacitor itself logs, once at start-up on old
   WebViews, `Error injecting safe area CSS: TypeError: Cannot read properties of null` — it fires
   before the page exists and did not affect the layout.
+
+## Before the closed test
+
+Try the debug build on a real phone (or an emulator whose *Android System WebView* is 140 or newer).
+WebView 140+ takes the edge-to-edge path that the emulator above (WebView 124) did not exercise:
+check that the HUD and the map clear the status bar and that the board is not cut off at the bottom.
