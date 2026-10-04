@@ -102,7 +102,7 @@ html, body {
 #shareNote { display: block; margin-top: 6px; font-size: 12px; color: #93a4c3; }
 .fine { margin-top: 14px; font-size: 11px; color: #64748b; }
 #stage { position: relative; line-height: 0; }
-#goalCard {
+#goalCard, #pauseCard {
   position: absolute; left: 8%; right: 8%; top: 50%; transform: translateY(-50%);
   pointer-events: none; /* the first swipe must reach the canvas underneath */
   background: rgba(17,25,53,.94); border: 1px solid #263156; border-radius: 12px;

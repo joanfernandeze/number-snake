@@ -5,6 +5,7 @@ import * as Snake from './snake.js';
 import * as Fx from './fx.js';
 import * as Sound from './sound.js';
 import * as Music from './music.js';
+import { shiftForPause } from './nav.js';
 import { initInput } from './input.js';
 import { GRID, STORAGE_KEY, DEATH, UI, DIFFICULTIES, DEFAULT_DIFFICULTY, DAILY, ANALYTICS } from './constants.js';
 import { loadRuns, saveRuns, buildRun, summarize, formatStats } from './telemetry.js';
@@ -221,6 +222,7 @@ function runBoardKey() {
   return level ? boardFor(level).key : 'open';
 }
 let game, fx, lastTick, motion, prevNow, interval;
+let pausedAt = null; // performance.now() when the run was paused; null while it plays
 
 const SESSION = Date.now().toString(36); // one page load = one "player session"
 let runs = loadRuns();
@@ -250,6 +252,8 @@ function start(opts = {}) {
   game = Game.createGame(createRng(seed), cfg, level ? { board: boardFor(level) } : {});
   fx = Fx.createFx();
   Music.stop(true); // a new run is silent until its first move
+  pausedAt = null;
+  $('pauseCard').classList.add('hidden');
   motion = { kind: 'none', progress: 1 };
   interval = Game.currentTarget(game);
   lastTick = performance.now();
@@ -271,8 +275,26 @@ function onDirection(dir) {
   // (and its music). Touch is unaffected: the map covers the canvas.
   if (!$('mapOverlay').classList.contains('hidden')) return;
   if (!game || game.over) return;
+  if (pausedAt !== null) resumeRun(performance.now());
   if (!game.started) { Game.startRun(game); lastTick = performance.now(); run.t0 = lastTick; paintDaily(); $('goalCard').classList.add('hidden'); Music.setTempoFromInterval(interval); Music.start(runBoardKey()); }
   Snake.setDirection(game.snake, dir);
+}
+
+// Freeze a moving run: leaving the page (a call, another app) or the back button. The card asks for
+// a swipe, which resumes it in onDirection.
+function pauseRun() {
+  if (!game || !game.started || game.over || pausedAt !== null) return;
+  pausedAt = performance.now();
+  Music.pause();
+  $('pauseCard').classList.remove('hidden');
+}
+
+function resumeRun(now) {
+  run.t0 = shiftForPause(run.t0, pausedAt, now);
+  lastTick = now; // the next move is a full interval away, as at the start of a run
+  pausedAt = null;
+  $('pauseCard').classList.add('hidden');
+  Music.resume();
 }
 
 function onGameOver(ev, now) {
@@ -327,7 +349,8 @@ function frame(now) {
   Music.setTempoFromInterval(interval);
 
   const elapsed = now - lastTick;
-  if (game.started && !game.over && Game.tickDue(elapsed, interval, game.snake.queue.length > 0)) {
+  const paused = pausedAt !== null;
+  if (!paused && game.started && !game.over && Game.tickDue(elapsed, interval, game.snake.queue.length > 0)) {
     const early = elapsed < interval; // a queued turn cut the slide short
     const prevCells = game.snake.cells.map(c => ({ x: c.x, y: c.y })); // where the body slides from
     const ev = Game.step(game);
@@ -356,12 +379,12 @@ function frame(now) {
   }
   // A campaign goal is judged every frame; it can only change on a tick, but the check is cheap
   // and keeps the loop simple.
-  if (level && game.started && !game.over && evaluate(level, facts(now)).won) {
+  if (!paused && level && game.started && !game.over && evaluate(level, facts(now)).won) {
     onGameOver(Game.finish(game), now);
   }
   // The slide lasts as long as the interval that will fire the next tick. That interval
   // eases rather than jumps, so the slide it paces cannot lurch either.
-  if (motion.kind !== 'none') motion.progress = Math.min(1, (now - lastTick) / interval);
+  if (!paused && motion.kind !== 'none') motion.progress = Math.min(1, (now - lastTick) / interval);
 
   Fx.update(fx, now, dt);
   $('score').textContent = game.score;
@@ -429,7 +452,9 @@ $('musicToggle').addEventListener('click', () => {
   paintMusic();
 });
 // Never play in the background: another app, a locked phone.
-document.addEventListener('visibilitychange', () => (document.hidden ? Music.pause() : Music.resume()));
+// Leaving the page pauses a moving run (and its music); coming back shows the pause card and waits
+// for a swipe — the snake never moves on while the player is not looking.
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseRun(); });
 window.addEventListener('resize', fitCanvas);
 window.addEventListener('orientationchange', fitCanvas);
 // Tapping a level starts a run on it straight away: the panel is already the "play again" moment.
