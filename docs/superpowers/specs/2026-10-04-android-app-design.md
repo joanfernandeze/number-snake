@@ -52,8 +52,8 @@ then C once the interstitial is live.
 
 - **Pause** (app and web alike). When the page is hidden mid-run (a call, another app, a locked
   screen), the run freezes. Back on the page, a card like the goal card reads **Paused · Swipe to
-  continue**; the next swipe or arrow key resumes, applying its direction, with the next move a full
-  interval later (as at the start of a run). The paused time does not count towards the run's elapsed
+  continue**; the next swipe or arrow key resumes, applying its direction, and the slide picks up
+  exactly where it froze. The paused time does not count towards the run's elapsed
   time, so a `time ≤ T` star is not lost to a phone call (`run.t0` moves forward by the paused span),
   nor towards `durationMs` in the telemetry. Music already pauses with the page.
 - **Android back button**, decided by a pure function `backAction(state)` in `src/nav.js`:
