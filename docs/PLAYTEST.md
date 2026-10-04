@@ -117,6 +117,12 @@ note per merge, so a big cascade is audibly bigger; eating without a merge is a 
 obstacle turning solid is a low thud; death slides down. There is a **Sound: on/off** toggle on
 the game-over panel and the choice is remembered.
 
+**Music** is generated too. Each board has its own track (Endless and the Daily play the open
+board's), and the tempo follows the snake's speed, between 90 and 150 BPM. **Music: on/off** sits
+beside **Sound: on/off** and is remembered. It starts on the first move, fades out when the run
+ends, and pauses when the page is hidden. Watch for whether players turn music off, and whether
+any track grates on repeat.
+
 **Obstacles are telegraphed.** One lands hollow, with a dashed red outline, and blinks for five
 moves before it turns into a solid hazard block. Only the solid ones end a run. If the snake is
 lying across the cell when it would turn solid, the obstacle gives up rather than kill from

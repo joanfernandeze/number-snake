@@ -4,6 +4,7 @@ import * as Render from './render.js';
 import * as Snake from './snake.js';
 import * as Fx from './fx.js';
 import * as Sound from './sound.js';
+import * as Music from './music.js';
 import { initInput } from './input.js';
 import { GRID, STORAGE_KEY, DEATH, UI, DIFFICULTIES, DEFAULT_DIFFICULTY, DAILY, ANALYTICS } from './constants.js';
 import { loadRuns, saveRuns, buildRun, summarize, formatStats } from './telemetry.js';
@@ -209,6 +210,16 @@ function paintPanel(verdict) {
 function paintSound() {
   $('soundToggle').textContent = `Sound: ${Sound.isMuted() ? 'off' : 'on'}`;
 }
+
+function paintMusic() {
+  $('musicToggle').textContent = `Music: ${Music.isMuted() ? 'off' : 'on'}`;
+}
+
+// The board the run is played on, for its music: a campaign level's board, else the open board
+// (Endless and the Daily).
+function runBoardKey() {
+  return level ? boardFor(level).key : 'open';
+}
 let game, fx, lastTick, motion, prevNow, interval;
 
 const SESSION = Date.now().toString(36); // one page load = one "player session"
@@ -238,6 +249,7 @@ function start(opts = {}) {
   const cfg = level ? cfgFor(level) : DIFFICULTIES[mode === 'free' ? difficulty : DAILY.level];
   game = Game.createGame(createRng(seed), cfg, level ? { board: boardFor(level) } : {});
   fx = Fx.createFx();
+  Music.stop(true); // a new run is silent until its first move
   motion = { kind: 'none', progress: 1 };
   interval = Game.currentTarget(game);
   lastTick = performance.now();
@@ -256,11 +268,12 @@ function start(opts = {}) {
 
 function onDirection(dir) {
   if (!game || game.over) return;
-  if (!game.started) { Game.startRun(game); lastTick = performance.now(); run.t0 = lastTick; paintDaily(); $('goalCard').classList.add('hidden'); }
+  if (!game.started) { Game.startRun(game); lastTick = performance.now(); run.t0 = lastTick; paintDaily(); $('goalCard').classList.add('hidden'); Music.setTempoFromInterval(interval); Music.start(runBoardKey()); }
   Snake.setDirection(game.snake, dir);
 }
 
 function onGameOver(ev, now) {
+  Music.stop();
   const won = !!ev.won;
   if (won) {
     Sound.playWin();
@@ -308,6 +321,7 @@ function frame(now) {
   const dt = prevNow === undefined ? 0 : now - prevNow;
   prevNow = now;
   interval = Game.smoothInterval(interval, Game.currentTarget(game), dt);
+  Music.setTempoFromInterval(interval);
 
   const elapsed = now - lastTick;
   if (game.started && !game.over && Game.tickDue(elapsed, interval, game.snake.queue.length > 0)) {
@@ -407,6 +421,12 @@ $('soundToggle').addEventListener('click', () => {
   Sound.saveMuted(Sound.setMuted(!Sound.isMuted()));
   paintSound();
 });
+$('musicToggle').addEventListener('click', () => {
+  Music.saveMuted(Music.setMuted(!Music.isMuted()));
+  paintMusic();
+});
+// Never play in the background: another app, a locked phone.
+document.addEventListener('visibilitychange', () => (document.hidden ? Music.pause() : Music.resume()));
 window.addEventListener('resize', fitCanvas);
 window.addEventListener('orientationchange', fitCanvas);
 // Tapping a level starts a run on it straight away: the panel is already the "play again" moment.
@@ -452,5 +472,7 @@ paintLevels();
 paintDaily();
 Sound.setMuted(Sound.loadMuted());
 paintSound();
+Music.setMuted(Music.loadMuted());
+paintMusic();
 showMap();
 requestAnimationFrame(frame);
