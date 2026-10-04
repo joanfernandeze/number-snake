@@ -14,7 +14,7 @@ test('every file the page loads is in the app bundle', () => {
 
 test('the module graph follows imports from main.js', () => {
   const g = moduleGraph('src/main.js');
-  for (const f of ['src/main.js', 'src/game.js', 'src/music.js', 'src/tracks.js', 'src/nav.js']) {
+  for (const f of ['src/main.js', 'src/game.js', 'src/music.js', 'src/tracks.js', 'src/nav.js', 'src/platform.js']) {
     assert.ok(g.includes(f), `${f} reached`);
   }
 });

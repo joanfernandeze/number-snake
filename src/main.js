@@ -5,7 +5,8 @@ import * as Snake from './snake.js';
 import * as Fx from './fx.js';
 import * as Sound from './sound.js';
 import * as Music from './music.js';
-import { shiftForPause } from './nav.js';
+import { backAction, shiftForPause } from './nav.js';
+import { appPlugin } from './platform.js';
 import { initInput } from './input.js';
 import { GRID, STORAGE_KEY, DEATH, UI, DIFFICULTIES, DEFAULT_DIFFICULTY, DAILY, ANALYTICS } from './constants.js';
 import { loadRuns, saveRuns, buildRun, summarize, formatStats } from './telemetry.js';
@@ -342,7 +343,8 @@ function onGameOver(ev, now) {
   $('statsText').textContent = formatStats(summarize(runs));
   console.log('[Number Snake] run', rec);
   console.log('[Number Snake] stats', summarize(runs));
-  setTimeout(() => { if (game.over) $('overlay').classList.remove('hidden'); }, won ? UI.winPanelDelayMs : DEATH.overlayDelayMs);
+  // Back during the flash may have taken the player to the map: the panel must not open over it.
+  setTimeout(() => { if (game.over && $('mapOverlay').classList.contains('hidden')) $('overlay').classList.remove('hidden'); }, won ? UI.winPanelDelayMs : DEATH.overlayDelayMs);
 }
 
 function frame(now) {
@@ -458,6 +460,23 @@ $('musicToggle').addEventListener('click', () => {
 // Leaving the page pauses a moving run (and its music); coming back shows the pause card and waits
 // for a swipe — the snake never moves on while the player is not looking.
 document.addEventListener('visibilitychange', () => { if (document.hidden) pauseRun(); });
+
+// The Android back button (app only; on the web this does nothing): see nav.js for the rules.
+const AppPlugin = appPlugin('App');
+if (AppPlugin) {
+  AppPlugin.addListener('backButton', () => {
+    const action = backAction({
+      mapOpen: !$('mapOverlay').classList.contains('hidden'),
+      panelOpen: !$('overlay').classList.contains('hidden'),
+      started: !!(game && game.started),
+      over: !!(game && game.over),
+      paused: pausedAt !== null,
+    });
+    if (action === 'minimize') AppPlugin.minimizeApp();
+    else if (action === 'pause') pauseRun();
+    else { Music.stop(true); showMap(); } // a paused or unstarted run is simply left behind: no game over, no telemetry
+  });
+}
 window.addEventListener('resize', fitCanvas);
 window.addEventListener('orientationchange', fitCanvas);
 // Capacitor sets the safe-area insets after the page loads, which changes #app's padding but fires
